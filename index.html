@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>III-Servicios | Sistema de Fallas PMX</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%);color:#2c3e50;min-height:100vh;}
+.container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.1);overflow:hidden;}
+.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:20px 30px;display:flex;align-items:center;justify-content:space-between;}
+.header h1{font-size:22px;}
+.header p{font-size:12px;opacity:.85;margin-top:3px;}
+.hdr-fecha{font-size:12px;opacity:.8;text-align:right;}
+
+/* NAV TABS */
+.nav-tabs{display:flex;border-bottom:2px solid #e9ecef;background:#f8f9fa;overflow-x:auto;}
+.nav-tab{padding:12px 20px;font-size:12px;font-weight:600;color:#6c757d;cursor:pointer;border:none;background:transparent;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;}
+.nav-tab:hover{color:#667eea;}
+.nav-tab.active{color:#667eea;border-bottom-color:#667eea;background:white;}
+.badge{background:#dc3545;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;}
+.badge.green{background:#27ae60;}
+.badge.blue{background:#2980b9;}
+
+/* VIEWS */
+.view{display:none;padding:24px;}
+.view.active{display:block;}
+
+/* ALERT */
+#alert-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.alert{padding:12px 18px;border-radius:6px;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,.15);min-width:260px;max-width:360px;animation:slideIn .3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+.alert-success{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+.alert-danger{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
+.alert-info{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb;}
+.alert-warning{background:#fff3cd;color:#856404;border:1px solid #ffeeba;}
+
+/* LOADER */
+.loader-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.7);z-index:8888;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+.loader-overlay.on{display:flex;}
+.spinner{width:40px;height:40px;border:4px solid #e9ecef;border-top-color:#667eea;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* FORM LAYOUT */
+.form-grid{display:grid;grid-template-columns:340px 1fr;gap:24px;}
+@media(max-width:900px){.form-grid{grid-template-columns:1fr;}}
+.left-col{background:#f8f9fa;border-radius:8px;padding:20px;}
+.right-col{}
+
+/* USUARIO SECTION */
+.user-section{margin-bottom:18px;}
+.user-label{font-size:11px;color:#667eea;font-weight:700;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px;}
+select.user-sel,select.fld-sel,input.fld-in,textarea.fld-ta{width:100%;padding:9px 10px;border:1px solid #ced4da;border-radius:4px;font-size:13px;font-family:inherit;background:white;outline:none;transition:border-color .2s;}
+select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:focus{border-color:#667eea;box-shadow:0 0 0 2px rgba(102,126,234,.15);}
+.fld-ta{resize:vertical;min-height:60px;}
+
+/* PREFIX TOGGLE */
+.pfx-wrap{display:flex;}
+.pfx-btn{padding:9px 14px;font-size:12px;font-weight:700;border:1px solid #ced4da;background:white;cursor:pointer;transition:all .15s;letter-spacing:.5px;}
+.pfx-btn:first-child{border-radius:4px 0 0 4px;}
+.pfx-btn:last-child{border-radius:0 4px 4px 0;border-left:none;}
+.pfx-btn.pmx{background:#fff3cd;color:#856404;border-color:#f0c040;}
+.pfx-btn.tis{background:#cfe2ff;color:#084298;border-color:#9ec5fe;}
+.pfx-num{border-radius:0 4px 4px 0!important;border-left:none!important;flex:1;}
+
+/* MTTO CHIPS */
+.mtto-row{display:flex;gap:8px;}
+.mc{flex:1;border:2px solid #ced4da;border-radius:6px;padding:10px 8px;text-align:center;cursor:pointer;background:white;transition:all .15s;}
+.mc .mi{font-size:18px;display:block;margin-bottom:3px;}
+.mc .ml{font-size:11px;font-weight:700;color:#6c757d;display:block;}
+.mc.prev{border-color:#27ae60;background:#d4edda;}
+.mc.prev .ml{color:#155724;}
+.mc.corr{border-color:#dc3545;background:#f8d7da;}
+.mc.corr .ml{color:#721c24;}
+
+/* GRUPO GRID */
+.gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}
+.gc{border:1px solid #ced4da;border-radius:4px;padding:9px;cursor:pointer;background:white;transition:all .12s;}
+.gc:hover{border-color:#667eea;background:#f0f1ff;}
+.gc.on{border-color:#667eea;background:#eef0ff;}
+.gc-name{font-size:11px;font-weight:600;color:#2c3e50;line-height:1.3;margin-bottom:2px;}
+.gc.on .gc-name{color:#667eea;}
+.gc-cnt{font-size:10px;color:#adb5bd;}
+
+/* SUBFALLA */
+.sfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:5px;}
+.sfc{border:1px solid #ced4da;border-radius:3px;padding:7px 10px;font-size:11px;color:#495057;cursor:pointer;background:white;line-height:1.4;transition:all .12s;position:relative;}
+.sfc:hover{border-color:#667eea;}
+.sfc.on{border-color:#667eea;background:#eef0ff;color:#667eea;font-weight:600;padding-right:18px;}
+.sfc.on::after{content:"OK";position:absolute;top:5px;right:6px;font-size:9px;}
+.sgg .gc{border-color:#ced4da;}
+.sgg .gc.on{border-color:#764ba2;background:#f5f0ff;}
+.sgg .gc.on .gc-name{color:#764ba2;}
+#panel-libre{display:block;}
+
+/* REGISTROS */
+.rl{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+.ri{background:#f8f9fa;border:1px solid #e9ecef;border-radius:4px;padding:9px 12px;display:flex;align-items:flex-start;gap:9px;}
+.ri-num{font-size:10px;color:#667eea;background:#eef0ff;border:1px solid #c7d2fa;padding:2px 6px;border-radius:2px;flex-shrink:0;margin-top:1px;}
+.ri-info{flex:1;}
+.ri-g{font-size:11px;font-weight:700;color:#667eea;margin-bottom:1px;}
+.ri-d{font-size:11px;color:#6c757d;line-height:1.4;}
+.ri-del{background:transparent;border:none;color:#adb5bd;cursor:pointer;font-size:15px;padding:0 3px;}
+.ri-del:hover{color:#dc3545;}
+
+/* BUTTONS */
+.btn{padding:10px 18px;border:none;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;transition:all .2s;}
+.btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;width:100%;padding:12px;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(102,126,234,.4);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-sec{background:white;color:#6c757d;border:1px solid #ced4da;}
+.btn-sec:hover{background:#f8f9fa;}
+.btn-add{background:#e8f5e9;color:#27ae60;border:1px solid #a5d6a7;width:100%;}
+.btn-add:hover{background:#c8e6c9;}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.btn-apro{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+.btn-apro:hover{background:#c3e6cb;}
+.btn-conf{background:#cfe2ff;color:#084298;border:1px solid #9ec5fe;}
+.btn-conf:hover{background:#bdd5fc;}
+.btn-cerr{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
+.btn-cerr:hover{background:#f5c6cb;}
+.btn-repr{background:#fff3cd;color:#856404;border:1px solid #ffe69c;}
+.btn-repr:hover{background:#ffe69c;}
+
+/* PROGRESS */
+.prog-steps{display:flex;align-items:center;margin-bottom:16px;}
+.ps{display:flex;align-items:center;gap:6px;font-size:11px;color:#adb5bd;}
+.ps.act{color:#667eea;font-weight:600;}
+.ps.done{color:#27ae60;}
+.pn{width:22px;height:22px;border-radius:50%;border:2px solid #ced4da;display:flex;align-items:center;justify-content:center;font-size:9px;background:white;flex-shrink:0;}
+.ps.act .pn{border-color:#667eea;color:#667eea;}
+.ps.done .pn{border-color:#27ae60;color:#27ae60;background:#d4edda;}
+.pl{flex:1;height:1px;background:#e9ecef;margin:0 6px;}
+
+/* SECTION TITLE */
+.sec-title{font-size:12px;font-weight:700;color:#667eea;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #eef0ff;}
+
+/* PANEL STEPS */
+.panel{display:none;}
+.panel.on{display:block;}
+
+/* FALLA CARDS (subgerente, coordinador, cierre) */
+.fcards{display:flex;flex-direction:column;gap:10px;}
+.fc{background:white;border:1px solid #e9ecef;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.fc-h{padding:12px 14px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:background .15s;}
+.fc-h:hover{background:#f8f9fa;}
+.fc-folio{font-size:11px;color:#667eea;background:#eef0ff;border:1px solid #c7d2fa;padding:3px 7px;border-radius:3px;flex-shrink:0;margin-top:1px;font-weight:700;}
+.fc-info{flex:1;}
+.fc-title{font-size:13px;font-weight:700;color:#2c3e50;margin-bottom:3px;}
+.fc-meta{font-size:11px;color:#6c757d;display:flex;gap:12px;flex-wrap:wrap;}
+.fc-b{display:none;padding:0 14px 14px;border-top:1px solid #e9ecef;}
+.fc-b.on{display:block;}
+.fi{display:flex;flex-direction:column;gap:4px;margin:10px 0 12px;}
+.fi-item{background:#f8f9fa;border:1px solid #e9ecef;border-radius:3px;padding:7px 10px;}
+.fi-g{font-size:11px;font-weight:700;color:#667eea;margin-bottom:2px;}
+.fi-d{font-size:11px;color:#6c757d;line-height:1.4;}
+
+/* STATUS BADGES */
+.sb{padding:4px 8px;border-radius:3px;font-size:11px;font-weight:700;}
+.sb-rep{background:#fff3cd;color:#856404;}
+.sb-apro{background:#d4edda;color:#155724;}
+.sb-asig{background:#cfe2ff;color:#084298;}
+.sb-cerr{background:#d1e7dd;color:#0f5132;}
+.sb-rech{background:#f8d7da;color:#721c24;}
+
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
+@media(max-width:700px){.stats{grid-template-columns:repeat(3,1fr);}}
+.stat{background:white;border:1px solid #e9ecef;border-radius:6px;padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.stat-n{font-size:28px;font-weight:700;margin-bottom:3px;}
+.stat-l{font-size:10px;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;}
+.sn-t .stat-n{color:#6c757d;}
+.sn-p .stat-n{color:#856404;}
+.sn-a .stat-n{color:#155724;}
+.sn-c .stat-n{color:#084298;}
+.sn-x .stat-n{color:#0f5132;}
+
+/* ACC BOXES */
+.acc{border-radius:5px;padding:14px;margin-top:12px;}
+.acc-sub{background:#f5f0ff;border:1px solid #d8b4fe;}
+.acc-coord{background:#eff6ff;border:1px solid #93c5fd;}
+.acc-cierre{background:#f0fdf4;border:1px solid #86efac;}
+.acc-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.acc-sub .acc-title{color:#7e22ce;}
+.acc-coord .acc-title{color:#1d4ed8;}
+.acc-cierre .acc-title{color:#15803d;}
+
+/* EC CHIPS */
+.ec-big-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.ec-big{flex:1;min-width:90px;text-align:center;padding:10px 8px;border:2px solid #ced4da;border-radius:5px;cursor:pointer;background:white;transition:all .15s;}
+.ec-big .ebi{font-size:16px;display:block;margin-bottom:3px;}
+.ec-big .ebl{font-size:11px;font-weight:700;color:#6c757d;display:block;}
+.ec-big[data-v="Operando"].on{border-color:#27ae60;background:#d4edda;}
+.ec-big[data-v="Operando"].on .ebl{color:#155724;}
+.ec-big[data-v="Falla administrada"].on{border-color:#ffc107;background:#fff3cd;}
+.ec-big[data-v="Falla administrada"].on .ebl{color:#856404;}
+.ec-big[data-v="Fuera de Operacion"].on{border-color:#dc3545;background:#f8d7da;}
+.ec-big[data-v="Fuera de Operacion"].on .ebl{color:#721c24;}
+
+/* CHKLIST */
+.chklist{background:white;border:1px solid #e9ecef;border-radius:4px;padding:10px 12px;margin:10px 0;font-size:12px;display:flex;flex-direction:column;gap:5px;}
+.chi{display:flex;align-items:center;gap:7px;color:#6c757d;}
+.chi.done{color:#27ae60;}
+
+/* PROV FALLA BOX */
+.falla-box{background:#f8f9fa;border:1px solid #e9ecef;border-radius:5px;padding:12px;margin-bottom:8px;}
+.falla-box-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.falla-box-num{font-size:10px;color:#667eea;background:#eef0ff;border:1px solid #c7d2fa;padding:2px 7px;border-radius:2px;font-weight:700;}
+.falla-box-name{font-size:12px;font-weight:700;color:#2c3e50;}
+.falla-box-desc{font-size:11px;color:#6c757d;margin-bottom:8px;line-height:1.4;}
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.mini-lbl{display:block;font-size:10px;font-weight:700;color:#6c757d;text-transform:uppercase;margin-bottom:4px;}
+.mini-sel{width:100%;background:white;border:1px solid #ced4da;color:#2c3e50;font-family:inherit;font-size:12px;padding:7px 9px;border-radius:3px;outline:none;appearance:none;cursor:pointer;}
+.mini-in{width:100%;background:white;border:1px solid #ced4da;color:#2c3e50;font-family:inherit;font-size:12px;padding:7px 9px;border-radius:3px;outline:none;}
+.mini-chk{display:flex;gap:8px;margin-top:4px;}
+.mck{font-size:10px;color:#adb5bd;}
+.mck.ok{color:#27ae60;}
+
+/* CIERRE OPTS */
+.co-row{display:flex;gap:7px;margin-bottom:10px;}
+.co{flex:1;border:2px solid #ced4da;border-radius:4px;padding:10px;text-align:center;cursor:pointer;background:white;font-family:inherit;transition:all .15s;}
+.co .ci{font-size:18px;display:block;margin-bottom:3px;}
+.co .cl{font-size:11px;font-weight:700;color:#6c757d;display:block;}
+.co.ok{border-color:#27ae60;background:#d4edda;}
+.co.ok .cl{color:#155724;}
+.co.pend{border-color:#ffc107;background:#fff3cd;}
+.co.pend .cl{color:#856404;}
+.co.rep{border-color:#dc3545;background:#f8d7da;}
+.co.rep .cl{color:#721c24;}
+.xf{display:none;}
+.xf.on{display:block;margin-top:8px;}
+
+/* RECH */
+.rech-wrap{display:none;margin-top:9px;}
+.rech-ta{width:100%;background:white;border:1px solid #f5c6cb;color:#2c3e50;font-family:inherit;font-size:12px;padding:8px;border-radius:3px;outline:none;resize:vertical;min-height:55px;}
+.btn-conf-rech{margin-top:6px;background:#dc3545;color:white;font-size:11px;font-weight:700;padding:7px 13px;border:none;border-radius:3px;cursor:pointer;}
+
+/* TABLA GERENCIAS */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{background:#f8f9fa;font-size:11px;color:#6c757d;font-weight:700;padding:9px 10px;text-align:left;border-bottom:2px solid #e9ecef;text-transform:uppercase;letter-spacing:.3px;}
+.tbl td{padding:9px 10px;border-bottom:1px solid #f0f0f0;color:#495057;vertical-align:middle;}
+.tbl tr:hover td{background:#fafafa;}
+.tbl td:first-child{font-weight:700;color:#667eea;font-size:11px;}
+
+/* FILTROS */
+.filt-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end;}
+.filt-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px;}
+.filt-lbl{font-size:10px;font-weight:700;color:#6c757d;text-transform:uppercase;}
+.filt-in{padding:7px 9px;border:1px solid #ced4da;border-radius:4px;font-size:12px;background:white;outline:none;}
+.filt-cnt{font-size:11px;color:#6c757d;margin-top:6px;}
+
+/* WA LOG */
+.wa-log{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;}
+.wa-item{padding:8px 10px;background:#f0fdf4;border-left:3px solid #27ae60;border-radius:3px;font-size:11px;color:#374151;}
+.wa-time{font-size:10px;color:#6c757d;margin-bottom:2px;}
+
+/* NOTA FUO */
+.nota-fuo{background:#fff3cd;border:1px solid #ffe69c;border-radius:4px;padding:10px 12px;font-size:12px;color:#856404;margin-bottom:12px;line-height:1.6;}
+
+/* RESPONSIVE */
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.mini-grid{grid-template-columns:1fr}}
+
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:#adb5bd;}
+.empty-i{font-size:32px;margin-bottom:10px;}
+.empty-m{font-size:13px;}
+</style>
+</head>
+<body>
+
+<div id="alert-container"></div>
+<div class="loader-overlay" id="loader"><div class="spinner"></div><span style="font-size:12px;color:#667eea;font-weight:600;">Conectando con Google Sheets...</span></div>
+
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>Sistema de Fallas PMX / TIS &mdash; III Servicios</h1>
+      <p>Backend conectado a Google Sheets en tiempo real</p>
+    </div>
+    <div class="hdr-fecha" id="hdr-fecha"></div>
+  </div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-sup" onclick="goTab('sup')">Supervisor <span class="badge green" id="b-sup">+</span></button>
+    <button class="nav-tab" id="tab-sub" onclick="goTab('sub')">Subgerente <span class="badge" id="b-sub">0</span></button>
+    <button class="nav-tab" id="tab-coord" onclick="goTab('coord')">Coordinador <span class="badge blue" id="b-coord">0</span></button>
+    <button class="nav-tab" id="tab-ger" onclick="goTab('ger')">Gerencias <span class="badge" style="background:#6c757d" id="b-ger">0</span></button>
+    <button class="nav-tab" id="tab-cierre" onclick="goTab('cierre')">Cierre dia <span class="badge blue" id="b-cierre">0</span></button>
+    <button class="nav-tab" id="tab-historial" onclick="goTab('historial')">Historial</button>
+  </div>
+
+  <!-- SUP: SUPERVISOR -->
+  <div class="view active" id="view-sup">
+    <div class="form-grid">
+      <div class="left-col">
+        <div class="sec-title">Identificacion del supervisor</div>
+        <div class="user-section">
+          <div class="user-label">Supervisor</div>
+          <select class="user-sel" id="sup-sel" onchange="onSupSel()">
+            <option value="">-- Selecciona tu nombre --</option>
+            <option>Ivan</option>
+            <option>Salvador</option>
+            <option>Gabriel</option>
+            <option>Alejo</option>
+            <option>Andres</option>
+            <option>Julio</option>
+            <option>Ricardo</option>
+          </select>
+        </div>
+        <div id="sup-form" style="display:none">
+          <hr style="border:none;border-top:1px solid #dee2e6;margin:16px 0;">
+          <div class="sec-title">Datos de la unidad</div>
+
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;font-weight:700;color:#495057;text-transform:uppercase;display:block;margin-bottom:5px;">Unidad</label>
+            <div class="pfx-wrap">
+              <button class="pfx-btn pmx" id="pfx-pmx" onclick="setPfx('PMX')">PMX</button>
+              <button class="pfx-btn" id="pfx-tis" onclick="setPfx('TIS')">TIS</button>
+              <input type="text" class="fld-in pfx-num" id="unit-num" placeholder="20001" maxlength="5">
+            </div>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;font-weight:700;color:#495057;text-transform:uppercase;display:block;margin-bottom:5px;">Terminal</label>
+            <select class="fld-sel" id="sup-term">
+              <option value="">-- Seleccionar --</option>
+              <option>Anil</option>
+              <option>Barranca del Muerto</option>
+              <option>San Juan Ixhuatepec</option>
+              <option>18 de Marzo</option>
+              <option>Toluca</option>
+              <option>Puebla</option>
+              <option>Tula</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;font-weight:700;color:#495057;text-transform:uppercase;display:block;margin-bottom:5px;">Tipo de mantenimiento</label>
+            <div class="mtto-row">
+              <button class="mc" id="mc-prev" onclick="setMtto('Preventivo')">
+                <span class="mi">&#128295;</span>
+                <span class="ml">Preventivo</span>
+              </button>
+              <button class="mc" id="mc-corr" onclick="setMtto('Correctivo')">
+                <span class="mi">&#9888;&#65039;</span>
+                <span class="ml">Correctivo</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="right-col">
+        <div id="sup-fallas-panel" style="display:none">
+          <div class="prog-steps">
+            <div class="ps done" id="ps1"><div class="pn">1</div><span>Unidad</span></div>
+            <div class="pl"></div>
+            <div class="ps act" id="ps2"><div class="pn">2</div><span>Fallas</span></div>
+            <div class="pl"></div>
+            <div class="ps" id="ps3"><div class="pn">3</div><span>Confirmar</span></div>
+          </div>
+
+          <!-- PASO 1: GRUPO -->
+          <div class="sec-title" id="lbl-grupo">1 — Grupo de falla</div>
+          <div class="gg" id="gg" style="margin-bottom:16px;"></div>
+
+          <!-- PASO 2: SUBGRUPO -->
+          <div id="panel-subgrupo" style="display:none;margin-bottom:16px;">
+            <div class="sec-title">2 — Subgrupo <span id="sg-hint" style="font-weight:400;text-transform:none;color:#6c757d;font-size:11px;"></span></div>
+            <div class="gg" id="sgg"></div>
+          </div>
+
+          <!-- PASO 3: SUB-FALLA -->
+          <div id="panel-subfalla" style="display:none;margin-bottom:16px;">
+            <div class="sec-title">3 — Sub-falla <span id="sf-hint" style="font-weight:400;text-transform:none;color:#6c757d;font-size:11px;"></span></div>
+            <div class="sfg" id="sfg"></div>
+            <!-- Campo libre si no encuentra la falla -->
+            <div id="panel-libre" style="margin-top:10px;padding:10px;background:#fff3cd;border:1px solid #ffe69c;border-radius:5px;">
+              <label style="font-size:11px;font-weight:700;color:#856404;display:block;margin-bottom:4px;">
+                &#9888;&#65039; No encuentro la falla en la lista — escribirla manualmente:
+              </label>
+              <input type="text" class="fld-in" id="falla-libre" placeholder="Describe la falla con detalle..." style="font-size:12px;">
+            </div>
+          </div>
+
+          <!-- OBSERVACIONES -->
+          <div id="panel-obs" style="display:none;margin-bottom:12px;">
+            <label style="font-size:11px;font-weight:700;color:#495057;text-transform:uppercase;display:block;margin-bottom:5px;">Observaciones adicionales <span style="font-weight:400;text-transform:none;color:#adb5bd;">(opcional)</span></label>
+            <textarea class="fld-ta" id="obs-f" rows="2" placeholder="Notas adicionales del supervisor..."></textarea>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:20px;" id="panel-agregar" style="display:none;">
+            <button class="btn btn-add" onclick="addFalla()">+ Agregar esta falla</button>
+            <button class="btn btn-primary" id="btn-enviar-sup" onclick="supEnviar()" disabled style="width:auto;padding:10px 20px;">Enviar reporte</button>
+          </div>
+
+          <div id="rl-wrap" style="display:none;">
+            <div class="sec-title">Fallas capturadas <span id="rl-count" style="font-weight:400;color:#6c757d;"></span></div>
+            <div class="rl" id="rl"></div>
+          </div>
+        </div>
+
+        <div id="sup-idle" style="text-align:center;padding:60px 20px;color:#adb5bd;">
+          <div style="font-size:48px;margin-bottom:16px;">Camion</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#6c757d;">Selecciona tu nombre para comenzar</div>
+          <div style="font-size:12px;">Ingresa los datos de la unidad y registra cada falla por separado</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUB: SUBGERENTE -->
+  <div class="view" id="view-sub">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Subgerente</label>
+        <select class="user-sel" id="sub-sel" style="margin-left:10px;width:auto;">
+          <option value="">-- Selecciona tu nombre --</option>
+          <option>Ing. Marco Anibal Chavez</option>
+          <option>Ing. Gerardo Balino Magana</option>
+          <option>Ing. Alberto Amador</option>
+          <option>Ing. Javier Zarate</option>
+          <option>Ing. Jose Antonio Hernandez</option>
+        </select>
+      </div>
+      <button class="btn btn-sec btn-sm" onclick="cargarSub()">Actualizar</button>
+    </div>
+    <div class="stats">
+      <div class="stat sn-t"><div class="stat-n" id="ss-t">0</div><div class="stat-l">Total</div></div>
+      <div class="stat sn-p"><div class="stat-n" id="ss-p">0</div><div class="stat-l">Pendientes</div></div>
+      <div class="stat sn-a"><div class="stat-n" id="ss-a">0</div><div class="stat-l">Aprobados</div></div>
+      <div class="stat sn-x"><div class="stat-n" id="ss-r">0</div><div class="stat-l">Rechazados</div></div>
+      <div class="stat sn-c"><div class="stat-n" id="ss-i">0</div><div class="stat-l">En proceso</div></div>
+    </div>
+    <div class="sec-title">Fallas pendientes de validacion</div>
+    <div class="fcards" id="sub-cards"></div>
+  </div>
+
+  <!-- COORD: COORDINADOR -->
+  <div class="view" id="view-coord">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Coordinador</label>
+        <select class="user-sel" id="coord-sel" style="margin-left:10px;width:auto;">
+          <option value="">-- Selecciona tu nombre --</option>
+          <option>Ing. Eder Emanuel Valdez</option>
+          <option>Sergio A. Garcia</option>
+          <option>Ing. Javier Zarate</option>
+          <option>Ing. Jose Antonio Hernandez</option>
+        </select>
+      </div>
+      <button class="btn btn-sec btn-sm" onclick="cargarCoord()">Actualizar</button>
+    </div>
+    <div class="nota-fuo">Actualiza el FUO manualmente primero. Luego asigna proveedor y estatus operativo a cada falla aqui. Al confirmar se notifica a las Gerencias.</div>
+    <div class="stats">
+      <div class="stat sn-a"><div class="stat-n" id="cs-a">0</div><div class="stat-l">Por asignar</div></div>
+      <div class="stat sn-c"><div class="stat-n" id="cs-c">0</div><div class="stat-l">Confirmadas</div></div>
+      <div class="stat sn-p"><div class="stat-n" id="cs-r">0</div><div class="stat-l">Reprogramar</div></div>
+      <div class="stat sn-x"><div class="stat-n" id="cs-x">0</div><div class="stat-l">Cerradas</div></div>
+    </div>
+    <div class="sec-title">Aprobadas - pendientes de asignacion</div>
+    <div class="fcards" id="coord-cards"></div>
+  </div>
+
+  <!-- GER: GERENCIAS -->
+  <div class="view" id="view-ger">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div style="font-size:13px;color:#6c757d;">Gerencia Regional GLR Valle de Mexico &middot; Gerencia de Mantenimiento</div>
+      <button class="btn btn-sec btn-sm" onclick="cargarGer()">Actualizar</button>
+    </div>
+    <div class="stats">
+      <div class="stat sn-t"><div class="stat-n" id="g-t">0</div><div class="stat-l">Total</div></div>
+      <div class="stat sn-p"><div class="stat-n" id="g-p">0</div><div class="stat-l">Pendientes</div></div>
+      <div class="stat sn-a"><div class="stat-n" id="g-a">0</div><div class="stat-l">Aprobadas</div></div>
+      <div class="stat sn-c"><div class="stat-n" id="g-c">0</div><div class="stat-l">Asignadas</div></div>
+      <div class="stat sn-x"><div class="stat-n" id="g-x">0</div><div class="stat-l">Cerradas</div></div>
+    </div>
+    <div class="filt-row">
+      <div class="filt-group"><span class="filt-lbl">Unidad</span><input class="filt-in" id="fi-u" placeholder="PMX o TIS..." oninput="filtrar()"></div>
+      <div class="filt-group"><span class="filt-lbl">Terminal</span>
+        <select class="filt-in" id="fi-t" onchange="filtrar()">
+          <option value="">Todas</option>
+          <option>Anil</option><option>Barranca del Muerto</option>
+          <option>San Juan Ixhuatepec</option><option>18 de Marzo</option>
+        </select>
+      </div>
+      <div class="filt-group"><span class="filt-lbl">Estado</span>
+        <select class="filt-in" id="fi-e" onchange="filtrar()">
+          <option value="">Todos</option>
+          <option value="REPORTADO">Pendiente</option>
+          <option value="APROBADO">Aprobado</option>
+          <option value="ASIGNADO">Asignado</option>
+          <option value="CERRADO">Cerrado</option>
+          <option value="RECHAZADO">Rechazado</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <button class="btn btn-sec btn-sm" onclick="limpiarFilt()">Limpiar</button>
+        <button class="btn btn-add btn-sm" onclick="exportar()">Exportar CSV</button>
+      </div>
+    </div>
+    <div class="filt-cnt">Mostrando <span id="g-cnt">0</span> de <span id="g-tot">0</span> registros</div>
+    <div class="sec-title" style="margin-top:12px;">Historico de fallas</div>
+    <div style="overflow-x:auto;">
+      <table class="tbl" id="ger-tbl">
+        <thead><tr><th>Folio</th><th>Unidad</th><th>Terminal</th><th>Tipo</th><th>Supervisor</th><th>Fallas</th><th>Proveedor</th><th>Estatus Op.</th><th>Estado</th></tr></thead>
+        <tbody id="ger-tbody"></tbody>
+      </table>
+    </div>
+    <div class="sec-title" style="margin-top:20px;">Notificaciones</div>
+    <div class="wa-log" id="wa-log"><div style="color:#adb5bd;font-size:12px;padding:8px;">Sin notificaciones aun. Apareceran cuando el coordinador confirme registros.</div></div>
+  </div>
+
+  <!-- CIERRE -->
+  <div class="view" id="view-cierre">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Supervisor</label>
+        <select class="user-sel" id="cierre-sup-sel" style="margin-left:10px;width:auto;" onchange="cargarCierre()">
+          <option value="">-- Selecciona tu nombre --</option>
+          <option>Ivan</option><option>Salvador</option><option>Gabriel</option>
+          <option>Alejo</option><option>Andres</option><option>Julio</option><option>Ricardo</option>
+        </select>
+      </div>
+      <button class="btn btn-sec btn-sm" onclick="cargarCierre()">Actualizar</button>
+    </div>
+    <div class="stats">
+      <div class="stat sn-t"><div class="stat-n" id="ci-t">0</div><div class="stat-l">Asignadas hoy</div></div>
+      <div class="stat sn-x"><div class="stat-n" id="ci-o">0</div><div class="stat-l">Concluidas</div></div>
+      <div class="stat sn-p"><div class="stat-n" id="ci-p">0</div><div class="stat-l">Pendientes</div></div>
+      <div class="stat sn-a"><div class="stat-n" id="ci-r">0</div><div class="stat-l">Reprogramar</div></div>
+    </div>
+    <div class="sec-title">Fallas del dia - marca el resultado de cada una</div>
+    <div class="fcards" id="cierre-cards"></div>
+    <button class="btn btn-primary" id="btn-cierre-enviar" onclick="enviarCierre()" disabled style="margin-top:20px;">Enviar reporte de cierre</button>
+  </div>
+
+  <!-- HISTORIAL -->
+  <div class="view" id="view-historial">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:13px;color:#6c757d;">Historial completo de todos los registros</div>
+      <button class="btn btn-sec btn-sm" onclick="cargarHistorial()">Actualizar</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr><th>Folio</th><th>Fecha</th><th>Unidad</th><th>Terminal</th><th>Supervisor</th><th>Tipo Mtto</th><th>Fallas</th><th>Aprobado por</th><th>Proveedor</th><th>Estatus Op.</th><th>Estado</th></tr></thead>
+        <tbody id="hist-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<script>
+var WEBHOOK = "https://script.google.com/macros/s/AKfycbxGeiCRNtkg0YT-kjNAX79VBtEDnXTSXFRgJ4BT-8pGR52bAdUiqxEMlWNbOFzBkK-XWQ/exec";
+
+var CAT = {"Aire Acondicionado": {"Compresor A/C": ["A/C NO ENFRÍA EL CLUTCH DEL COMPRESOR DAÑADO", "AC NO ENFRIA", "AMORTIGUADORES ESCURRIDOS", "BANDEROLAS", "C CON FALLA", "C CON FALLA INTERMINTENTE", "C SE AMARRA Y HUELE A QUEMADO", "C, REQUIERE REEMPLAZO COMPRESOR (28-9-25)", "CINTA REFLEJANTE DAÑADA", "COMPRESOR A", "COMPRESOR AC AMARRADO", "COMPRESOR DE A", "COMPRESOR DE AC AMARRADO CAUSA QUE SE ROMPA BANDA DE ACCESORIOS (TRAE BANDA MÁS CHICA QUE NO ACTIVA COMPRESOR) 16-05-26", "CUBRE ESCAPE DAÑADO", "FALLA EN SISTEMA A", "FUGA DE ACEITE POR RETORNO DEL TURBO", "POLEA MAGNÉTICA DE COMPRESOR A"], "Manguera / Fuga de gas": ["MANGUERA DE VAPORES DAÑADA", "ROMBOS EN MAL ESTADO"], "No enfría / No funciona": ["A/C NO ENFRIA", "A/C NO ENFRÍA", "A/C NO ENFRÍA, MANÓMETRO DAÑADO TONEL 1", "AC NO FUNCIONA", "AIRE ACONDICIONADO NO ENFRIA", "AMORTIGUADORES CON FALLA", "BOTÓN DE FRENO MOTOR CON FALLA", "C (29-4-26)", "C CON FALLA (30-1-26)", "C NO ENCIENDE", "C NO ENFRIA, REVISION DE PERNOS DE DIRECCIÓN AMORTIGUADORES TRASEROS", "C, NO ENFRÍA", "FALLA AIRE ACONDICIONADO", "FALLA EN A", "FALLA EN PANTALLA DE CAMARA DE REVERSA", "FALLA EN PANTALLA TCS3000 T#1", "FALLA EN SISTEMA A", "FALLA EN SISTEMA A/C", "FALLA EN SISTEMA AIRE ACONDICIONADO, NO FUNCIONA", "FALLA SISTEMA A", "FUGA EN ABRASADERA DEL TANQUE UNION ESCAPE DEF", "GOMAS DE PERCHA CUARTEADAS Y AJUSTE, CAMARA DE REVERSA SE VE BORROSA, BOTONERA DE VENTANA ROTA LADO CHOFER, VISERA LADO CHOFER DAÑADA, A", "LUZ TRASERA (PLAFÓN) NO FUNCIONA (14-5-26)", "MANGUERA DE AIRE DE VALVULA DE DESCARGA CON FUGA", "MÓDULO CONTROL EN CABINA DE SISTEMA A", "NO ENFRIA A/C", "NO FUNCIONA VELOCÍMETRO"], "Otros - A/C": ["A/C AVIENTA AIRE CALIENTE CUANDO ESTÁ EN USO EL AIRE FRÍO", "ADICIONALES: HUMO EN LLANTAS, FUGA DE AIRE POR CONEXIÓN TRANSMISIÓN", "AMORTIGUADORES CON DESGASTE", "BOTONERA DE CRISTALES DAÑADA", "BOTONERA DE PUERTA LADO PILOTO DAÑADA", "CÓDIGO ABS EN TABLERO", "DAÑO EN ABRAZADERA ESCAPE", "DAÑO EN CUBIERTA DE ESTRIBO", "DAÑO EN ESCALERA POR SINIESTRO", "DAÑO EN FUNDA TÉRMICA DE ESCAPE", "ESCALERA DESOLDADA (6-2-24), DAÑO OPERATIVO", "FARO IZQUIERDO NO ENCIENDE", "FUGA DE AIRE EN CONECTOR TIPO \"T\"", "FUGA DE AIRE EN FAN CLUTCH", "FUGA EN BOLSAS DE AIRE", "FUNDA DEL ASIENTO (ROTA)", "JUEGO PERNOS DIRECCION", "LIQUIDO DE DIRECCIÓN", "MEDIDOR DIRECTO T#1", "MEDIDOR DIRECTO T#1 (9-01-26)", "MONITOR TCS3000 DEL COMPARTIMENTO 1 SE VE ROJO", "NEBLINERO LADO DERECHO SE CAYÓ", "PENDIENTE DE REEMPLAZO DE CANDADO DE LLANTA DE REFACCION", "PRESENTA DESGASTE IRREGULAR EN LLANTAS DEL EJE TRACCIÓN #2", "T#2 BAJO FLUJO DE PRODUCTO", "TAPÓN TANQUE AUTOCONSUMO DAÑADO", "TRÁMITE ADMINISTRATIVO"]}, "Cabina": {"Asiento": ["AMORTIGUADOR DE ASIENTO ROTO", "ASIENTO DAÑADO", "ASIENTO ROTO", "CAMBIO DE ASIENTO DEL OPERADOR 01-4-26", "FUGA DE AIRE EN ASIENTO", "FUGA DE AIRE POR ASIENTO", "REEMPLAZO DE ASIENTO DE OPERADOR ROTO"], "Botonera / Controles": ["ACCIDENTE VIAL CON CICLISTA., BOTONERA DE ELEVADORES DAÑADA.,GOLPETEO DEBAJO DE LA CABINA", "AMORTIGUADOR DE ASIENTO", "BOTON DE FRENO DE MOTOR", "BOTONERA CONTROL CURCERO", "BOTONERA DAÑADA LADO CHOFER, FALLA EN BOTON PDL LOCK", "BOTONERA DAÑADA, RIN DE REFACCION OXIDADO", "BOTONERA DE CRISTALES DAÑADA", "BOTONERA DE CRISTALES DE VIDRIO CHOFER DAÑADA", "BOTONERA DE CRISTALES PRESENTA DAÑO", "BOTONERA DE ELEVADOR DE CRISTALES ROTA", "BOTONERA DE ELEVADOR DE CRITALES ROTA", "BOTONERA DE ELEVADOR ROTA", "BOTONERA DE PUERTA", "BOTONERA DE VIDRIO DAÑADA LADO DE EL PILOTO", "BOTONERA DE VIDRIOS DAÑADA", "BOTONERA DE VIDRIOS DAÑADO", "BOTONERA DEL CONTROL CRUCERO ROTA", "BOTONERA DEL ELEVADOR DE CRISTALES ROTA", "BOTONERA DEL VOLANTE DE CONTRO CRUCERO ROTA", "BOTONERA ELEVADORES VIDRIOS DAÑADA", "BOTONERA ELEVADORES VIDRIOS DAÑADA (FALLA ADMINISTRADA)", "BOTONERA IZQUIERDA DAÑADA", "BOTONERA LADO OPERADOR DAÑADA,SEGURO DE GOMA PUERTA PRECITANK DAÑADA", "BOTONES DE CONTROL DE MANDO ROTOS", "BOTONES DE ELEVADOR DE VIDRIO QUEBRADO", "BOTÓN DE ELEVADOR VIDRIOS QUEBRADO", "BOTÓN DE VIDRIOS DAÑADO", "CLIMA NO ENFRÍA", "CLIMA NO ENFRÍA (FALLA ADMINISTRADA)", "CONTROL DE ELEVADOR DE VIDRIO", "CONTROL DE MANDO SIN BOTONES", "DOS ABRAZADERAS DE TUBO DE ESCAPE DAÑADAS (SOLDADURA) / BOTONERA DE VIDRIO DAÑADA LADO DE EL PILOTO/", "ELEVADOR DE VIDRIOS", "FALLA EN COM", "FALLA EN TARJETA MADRE TCS 3000,BOTONERA LADO OPERADOR DAÑADA", "FALSEA EL BOTON DE INICIO DE LOS MONITORES TCS3000", "FALTA BOTON PARO EMERGENCIA", "FALTANTE BOTÓN(BOTONERA) PILOTO", "GOLPE EN DEFENSA TRASERA", "LUZ DE BOTONETA DEL TCS3000 C-1 NO ENCIENDE 02/04/2024SEGURO DE COFRE DAÑADO SE ABRE CON LA VIBRACION DEL AT", "MATACHISPAS", "NO TIENE LUZ DE PLACA, PIEZA COMPLETA", "TAPÓN DE AUTOCONSUMO"], "Calcomanías / Rotulación": ["8 CARTELES ROTOS Y DESGASTADOS", "CALCOMANIAS EN MAL ESTADO"], "Cámara de reversa": ["BANDERINES DAÑADOS", "BOTONERA DAÑADA, RIN DE REFACCION OXIDADO, CABLE ESPIRAL DE LA CAMARA DAÑADOFUGA DE PRODUCTO EN VALVULA API", "BOTONERA DE VIDRIOS DAÑADA", "C DAÑADA, CAMARA DE REVERSA NO SE VISUALIZA", "CAMARA DE REVERSA", "CAMARA DE REVERSA DAÑADA", "CAMARA DE REVERSA NO FUNCIONA", "CAMARA DE REVERSA SIN SEÑAL", "CANASTA DAÑADA DE C2, POLEA DE A", "CÁMARA DE REVERSA NO ENCIENDE", "DAÑO EN BANDERINES", "DAÑO EN PINTURA DE PLAFONERA", "DMAS DAÑADO", "FALLA CAMARA DE REVERSA", "FALLA EN CAMARA DE REVERSA", "FOCO FUNDIDO DE DIRECCIONAL", "FUGA DE ACEITE POR TODAS LAS MAZAS DEL TONEL", "FUGA DE PRODUCTO VALVULA PRESION Y VACIO", "MOBON CAÍDO", "NO SIRVE MEMBRANA DE LLAMADA", "NO TIENE LUZ DE PLACA, PIEZA COMPLETA", "PANTALLA DE REVERSA NO ENCIENDE", "PERNO CAPADO EN PALANCA DE API", "POLIN CHICO SUELTO", "ROMBOS DAÑADOS", "SIN SEÑAL EN CÁMARA DE REVERSA", "VAVULA Y CANASTILLA SUELTAS", "VINIL DAÑADO", "VÁLVULA FESTO DE PARO DE EMERGENCIA DAÑADA"], "Espejos": ["BOTONERA ESPEJOS DAÑADA", "BOTONERAS DE ESPEJOS DAÑADOS", "COLOCACION DE CARCASA DE ESPEJO CONCAVO LADO COPILOTO", "DAÑO EN CARCASA DE ESPEJO LATERAR LADO IZQUIERDO", "ESPEJO LATERAL IZQUIERDO ROTO **ABRAZADERA FLOJA DEL TUBO DE CARGA Y DESCARGA DEL SEGUNDO COMPARTIMENTO DEBAJO DEL TONEL", "FIJAR LUNAS DE ESPEJOS AMBOS LADOS", "GOLPE LUNA DE ESPEJO LADO IZQUIERDO EN ESPERA DE ODA", "VISERA DAÑADA LADO CHOFER, RETROVISOR, SEGUROS NO FUNCIONANCON BOTONERA, BOTONERA DAÑADA"], "Iluminación": ["FOCO PRINCIPAL IZQUIERDO FUNDIDO RECOGER EN CAJASA LZC 01/06/2026 SE RECIBE 21018 POR INTERCAMBIO CON ESTÁ UNIDAD", "LUZ DE BAJA FUNDIDA LADO COPILOTO", "PLAFON AMBER Y LUZ DE TRES MARIAS DEL REMOLQUE NO PRENDE"], "Otros - Cabina": ["ABRAZADERA DEL TANQUE DE POSTRATAMIENTO", "ABRAZADERA TIPO U DE TUBERÍA DE VAPORES CON DAÑO EN SOLDADURA", "ADMINISTRADA 27/05/2026", "AMORTIGUADORES CHORREADOS(5/11/25)", "AMORTIGUADORES DE CABINA DAÑADOS, BUJES DE BRAZOS TENSORES DAÑADOS", "AMORTIGUADORES DELANTEROS DAÑADOS", "BASE DE PAPELERA ROTA", "BASE DE PORTA ROMBOS LADO DERECHO DE TONEL ROTO", "BRIO A MUELLES", "C PRESENTA DAÑO EN POLEA, SE COLOCA BANDA MAS PEQUEÑA Y SE DESHABILITA COMPRESOR", "CINCHO DE SUJECIÓN DE TAPA PRECINTANK DAÑADO", "COLILLA DE ESCAPE FRACTURADO", "COMPRESOR DE A", "DAÑO BANDERIN DELANTERO", "DAÑO BANDERIN TONEL", "DAÑO EMPAQUES TAPONES AUTOCONSUMO (UNIDAD DE INTERCAMBIO CON TAD MADERO", "DAÑO EN BANDERIN DELANTERO", "DAÑO EN PORTALODERA TRACTOR (EXCESO DE OXIDO)", "DEFENSA TRASERA LADO IZQUIEDO Y FALDON LADO IZQUIERDO", "DESGASTE DE VOLANTE", "DESGASTE EN VOLANTE", "DO: GOLPE EN DEFENSA DELANTERA, DAÑO EN TAPA DE MASA POS 1, PASAMANOS DE ESCALERA DE TONEL", "FALLA EN SELLO ELECTRONICO, PLACA DE TAPIN COMPARTIMENTO 1 ROTA", "FALTA PERILLA DE VALVULA INTERLOCK", "FALTAN TORNILLOS DE BASE DE SUSPENSION DE TRACTOR", "FALTANTE TAPON TANQUE DE AUTOCONSUMO", "FLEXIBLE DE ESCAPE A CATALIZADOR ROTO", "FUGA DE AIRE BOLSA DE SUSPENCIÓN / / REEEMPLAZO BUJES DE CABINA / AMORTIGUADORES 3 ER EJE / 2 TORNILLOS SOPORTE DE CABINA 1/6/26", "FUGA DE AIRE CONEXIÓN DE GOBERNADOR", "FUGA DE AIRE EN CILINDRO DE VALVULA BETS", "FUGA DE AIRE FILTRO REGULADOR (SE CANCELA FILTRO REGULADOR)", "FUGA DE VAPORES POR TUBERIA DE ESCAPE, FILTRA HUMO A CABINA", "FUGA GLICERIA EN MANOMETRO DE VALVULA INTERLOCK DE COMPARTIMENTO 2", "FUGA UREA JUNTA DE ESCAPE", "FUNDA TÉRMICA DAÑADA", "GOLPE EN LOS DOS FALDONES DELANTEROS", "GOLPE EN PARTE BAJA DE TANQUE", "MANGUERA DE VAPORES DAÑADA", "MATACHISPAS (12-1-26)", "MEDICAMENTO DE BOTIQUÍN CADUCADO, ABS DE TONEL SE ACTIVA AL ACTIVAR EL FRENO DE PEDAL", "MEDIDOR DIRECTO T#2 (9-01-26)", "NO SIRVE MEMBRANA DE LLAMADA", "OXIDO EN PORTA PLACA", "PALANCA DE VÁLVULA API CON FALLA", "PASAMANOS DE ESCALERA GOLPEADO", "PENDIENTE DE REEMPLAZO DE CANDADO DE LLANTA DE REFACCION", "PERCHERO ROTO DAÑO OPERATIVO", "PERDIDA DE POTENCIA", "PERDIDA DE POTENCIA, FALLA EN SUSPENSION DE TONEL, DAÑO EN MATACHISPAS", "PERNO DE PALANCA API CAPADO", "PORTA LLANTAS DESOLDADO, BALATAS CON DESGASTE DEL TONEL, FUGA DE AIRE EN VALVULA DE 3 VIAS", "PROBLEMA CON BOLSA DE AIRE DE TRACTO", "PUERTA LADO OPERADOR NO ABRE POR DENTRO", "REEMPLAZO BOLSA DE SUSPENSIÓN 3ER EJE IZQUIERDO", "REJILLA DE VENTILACION EN CABINA ROTO", "REMPLAZO DE CABLE CHIRRIÓN EN PUERTA", "RING DAÑADO", "ROMBOS DAÑADOS", "RUIDO EN TURBO", "SEGURO DE LA TAPA DEL GENERADOR DE SELLOS ROTO", "SINIESTRO: GOLPE EN CARCASA LADO PILOTO", "SINIESTRO:GOLPE EN LOS DOS FALDONES DELANTEROS", "SOPORTE DE FENDER DESOLDADO", "SOPORTE DE SUJECIÓN DE POSTE ENFRIADOR DAÑADO", "TAPA DE BATERIAS ROTA", "TAPA DE SELLO ELECTRONICO ROTO", "TAPON DE AUTOCONSUMO DAÑADO", "TAPON DE COLUMNA LE FALTA", "TAPÓN DE COMBUSTIBLE", "TIRANTE ROTO DE DEPOSITO UREA", "TORNILLERÍA SUELTA EN CAMA DE TONEL", "TORNILLO CAPADO EN PERCHA DELANTERA", "TORNILLO DE PERCHA FALTANTE", "TRÁMITE ADMINISTRATIVO", "TUBO DE VAPORES SUELTO", "VISIERA DE LADO DEL PILOTO DAÑADA", "VÁSTAGO DE VÁLVULA BETTS NO SE RETRAE POR COMPLETO (19/12/25)"], "Parabrisas / Plumillas": ["COLOCAR BRAZO DE LIMPIA PARABRISAS NO TIENE, RELLENO DE NIVELES ACEITE DE MOTOR, ANTICONGELANTE, LIQUIDO LIMPIA PARA BRISAS", "DAÑO PLUMILLAS LIMPIAPARABRISAS", "PENDIENTE REEMPLAZO DE PLUMILLAS LIMPIA PARABRISAS", "PLUMILLAS LIMPIA PARABRISAS DAÑADAS"], "TCS / Electronivel": ["ELECTRONIVEL DAÑADO"], "Visera / Estructura": ["BASE DE VISERA ROTA DAÑO OPERATIVO", "DAÑO CONTRAGUIA DE COFRE", "FILTRACION DE AGUA POR TOLDO DE CABINA", "FUGA ACEITE AMORTIGUADOR COFRE", "FUGA DE UREA POR ABRAZADERA DE CATALIZADOR, GUIAS DE COFRE DAÑADA AMBOS LADOS, COFRE SE ABRE", "VISERA DAÑADA", "VISERA LADO CHOFER ROTA", "VISERA LADO CHOFER ROTA DAÑO OPERATIVO", "VISERA ROTA DAÑO OPERATIVO", "VISERAS DAÑADAS"]}, "Calibración Volumétrica de Tonel": {"Calibración volumétrica": ["CALIBRACION VOLUMETRICA T1 POR DEBAJO"], "Poro en tonel": ["PORO EN TONEL"]}, "Carrocería": {"Banderines / Señalización": ["BANDERÍN DAÑADO", "BOTÓN DE PÁNICO DAÑADO"], "Canastilla / Domo": ["CANASTILLA DE DOMO DESOLDADA", "CANASTILLA DESOLDADA DEL COMPARTIMIENTO 2", "CANASTILLA DESPRENDIDA COMP 1", "FALLA EN SELLO ELECTRÓNICO, TAPÍN DE DOMO NO CUENTA CON IMÁN AMBOS COMPARTIMENTOS", "GANCHO DE CANASTILLA TORO COMPARTIMIENTO 2", "MANGUERAS DE DOMOS ROTAS", "NO SE VE LA CAMARA DEL DOMO"], "Cofre / Salpicadera": ["12, FALTA MANGUERA DE RESPIRADERO DE AUTOCONSUMO, AMORTIGUADOR DE COFRE DAÑADO", "5.- REEMPLAZAR AMORTIGUADOR DE COFRE ESTA CHORREADO", "AC NO ENFRIA", "AMORTIGUADOR DE COFRE", "AMORTIGUADOR DE COFRE / MANGUERA HELICOIDAL CON CONEXION / JUNTA R/V / RECUBRIMIENTO TERMICO / GUIAS TOPOS Y GANCHOS DE COFRE", "CABLEDE PRECINTANK", "DAÑO EN CONTRAGUIAS DE COFRE", "DAÑO EN GUIAS Y CONTRAGUIAS DE COFRE", "FALTA TAPA DE BRAZO DE ESPEJO DE COFRE LADO DERECHO", "FUGA ACEITE AMORTIGUADOR COFRE", "FUGA AMORTIGUADOR COFRE", "FUGA DE ACEITE EN TAPA DE MAZA POSICION 11", "GOLPE EN COFRE- SALPICADERA LADO PANTALLAS", "GOMAS DE COFRE", "GUIAS TOPES Y GANCHOS DE COFRE", "LLANTA POS 2", "SALPICADERA ROTA", "SEGURO DE COFRE LADO PILOTO SE ABRE CONSTANTEMENTE", "SEGUROS DE COFRE EN MAL ESTADO", "SIN CARCASA DE BRAZO DE ESPEJO CONCAVO DE COFRE LADO DERECHO", "SINIESTRO:GOLPE SALPICADERA DELANTERA TONEL", "SOPORTE DE COFRE DAÑADO"], "Defensas / Faldón": ["BANDEROLA DE DEFENSA DELANTERA ROTA", "BANDERÍN DEFENSA TRASERA DERECHO", "COLOCAR MATACHISPAS, COLOCAR CADENA DE SEGURIDAD AL EXTINTOR, SOLICITAR ODA A TA TULA POR GOLPE EN DEFENSA", "COLOCAR MATACHISPAS, COLOCAR CADENA DE SEGURIDAD AL EXTINTOR, SOLICITAR ODA A TAD TULA POR GOLPE EN DEFENSA", "DAÑO EN BANDEROLAS LADO COPILOTO, EN DEFENSA TRASERA Y DELANTERA", "DEFENSA DELANTERA CON RASPÓN", "DEFENSA DELANTERA DAÑADA CON ODA", "DEFENSA DELANTERA GOLPEADA, SIN REPORTE DE SINIESTRO", "DEFENSA TRASERA DAÑADA LADO DERECHO", "DEFENSA TRASERA DOBLADA", "FALTA UN TORNILLO DE SUJECION EN LA DEFENSA DELANTERA", "FARO DE NIEBLA FUNDIDO GOLPE EN DEFENSA", "GOLPE EN DEFENSA", "GOLPE EN DEFENSA DELANTERA, FARO IZQUIERDO Y COFRE", "GOLPE EN DEFENSA DELANTERA, PUERTA, ESPEJO, PARRILLA OCASIONANDO FALLA MECÁNICA (TRASLADO EN GRÚA A CAJASA) ODA: 04260780167", "GOLPE EN DEFENSA Y PARABRISAS", "GOLPE EN FARO, DEFENSA Y COFRE LADO DERECHO", "GOLPE EN PARTE FONTRAL , DEFENSA, SALPICADERA LADO PILOTO, COFRE Y PARRILLA", "REFLEJANTE DE DEFENSA DE TONEL DESPRENDIENDOSE", "REPARACION DE DEFENSA TRASERA TONEL CON ODA 30/3/26 1.- REEMPLAZAR LODERAS TRASERAS DE TONEL POR DESGASTE", "SEGURO DE LLANTA DE REFACCIÓN ROTO", "SINIESTRO EN DEFENSA DELANTERA ODA (04260524552", "SINIESTRO: DAÑO EN DEFENSA TRASERA", "SINIESTRO: GOLPE EN DEFENSA DELANTERA, LLANTA POS 1 Y TAPA DE MASA ROTO", "SINIESTRO: GOLPE EN DEFENSA TRASERA LADO PILOTO", "SINIESTRO:GOLPE DEFENSA TRASERA", "SINIESTRO:GOLPE DEFENSA TRASERA TONEL", "TAPON DE COMBUSTIBLE DAÑADO, CUENTA LITROS C1 Y C2 ESTAN DIRECTOSDEFENSA CON TALLONES Y BANDEROLA QUEBRADA"], "Escalera / Perchero": ["BASE ESCALERA DESOLDADA EN PARTE INFERIOR (19-5-26)", "BOTON DE PANICO DAÑADO", "CLIMA SIN ENFRIAR", "DAÑO BISAGRAS DE ESTRIBO LADO OPERADOR", "DAÑO EN ESCALERA (CON ODA)", "DAÑO EN ESCALERA (REPARADA 27-05-26)", "DAÑO EN ESTRIBO , LODERA , ESPEJO LATERAL DERECHO", "DAÑO EN PELDAÑO", "DAÑO OPERATIVO POR OAT PEMEX: GOLPE EN CARROCERIA, ESPEJO, ESCALERA Y LLANTA. FALLAS ADMINISTRADAS: FALLA EN BOTONERA DMAS", "DEFENSA DELANTERA LADO IZQ CON GOLPE", "ESCALERA CON GOLPE", "ESCALERA DAÑADA", "ESCALERA DEL TONEL GOLPEADA", "ESCALERA DESOLDADA", "ESCALERA, CAJA DE VÁLVULAS DAÑADAS", "ESCALÓN ROTO", "ESPEJO CONCAVO IZQ DAÑADO NO ESTA SUJETO", "ESTRUCTURA DE ESCALERA CON RUPTURA", "FENDER ROTAS VIBRACION EXCESIVA", "GOLPE EN CAJA DE VÁLVULA, ESTRIBOS Y ESCAPE", "GOLPE EN ESCALERA PARTE INFERIOR Y ESTRIBO LADO COPILOTO", "GOLPE EN ESCALERA, JUEGO DE PERNOS DE DIRECCION PERNO ROTO DE API", "LIQ LIMPIAPARABRISAS", "NO TRAE ESPEJO BANQUETERO", "PASAMANOS GOLPEADO DE ESCALERA TONEL", "ROMBOS DAÑADOS", "SALPICADERAS DAÑADAS", "SINIESTRO:GOLPE ESTRIBO DERECHO"], "Espejo / Retrovisor": ["BOTONERA DE ESPEJOS LADO CONDUCTOR", "BRAZO DE ESPEJO ROTO", "CARCASA DE ESPEJO SUELTA LADO DERECHO (NO TRAE GOLPE)", "DAÑO EN ESPEJO RETROVISOR IZQ", "ESPEJO IZQUIERDO GOLPEADO, SIN REPORTE DE SINIESTRO", "ESPEJO RETROVISOR GOLPEADO (DAÑO OPERATIVO 07-02-26)", "ESPEJOS FLOJOS LADO OPERADOR", "FALLAS ADMIN: BASE QUEBRADA DE ESPEJO LATERAL DERECHO", "GOLPE EN ESPEJO LADO PILOITO", "GOLPE EN ESPEJO RETROVISOR (REPORTE SINIESTRO: 4260807848)", "LUNAS DE ESPEJOS LATERALES TIENEN MUCHA VIBRACION CUANDO SE ENCUENTRA EN RALENTI", "OAT ENTEIPO EL ESPEJO LATERAL DERECHO POR QUE SE ESTABA CALLENDO", "SINIESTRO EN ESPEJO INFERIOR LADO OPERADOR (ODA 04260694630", "SINIESTRO: GOLPE EN CARCASA Y ESPEJO LADO PILOTO", "VIBRACIÓN EN ESPEJO LATERAL DERECHO"], "Otros - Carrocería": ["**CAMARA DE REVERSA SE APAGA SOLA (CABLE ELICOIDAL DAÑADO)", "**PANTALLA DE CAMARA DE REVERSA NO SE VISUALIZA", "**PORTA DOCUMENTOS DESOLDADO", "2.- REEMPLAZAR TAPA DE MAZA SEGUNDO EJE DE TONEL LADO DERECHO ESTA CHORREADA", "3.- REEMPLAZAR MANGUERA HELICOIDAL CON SUS CONEXIONES POR FUGA DE AIRE", "37. MANTENIMIENTO PREVENTIVO ASE F.O:MANTENIMIENTO PREVENTIVO", "4 CARTELES ROTOS Y DESGASTADOS", "4.- ENGRASADO DE QUINTA RUEDA", "6.- REEMPLAZAR 5 CARTELES POR DESGASTE", "7.- COLOCAR Y AJUSTAR MALLA DE ESCAPE", "8 CARTELES ROTOS Y DESGASTADOS", "8.- REEMPLAZAR AMORTIGUADORES DE TRACTOCAMION SEGUNDO EJE AMBOS LADOS ESTAN CHORREADOS", "A AMARRADO", "A/C NO FUNCIONA", "AIRE ACONDICIONADO NO FUNCIONA", "AMORTIGUADOR 2 EJE LADO DERECHO VENCIDO", "AMORTIGUADOR 3ER EJE LADO DERECHO SIN TORNILLO", "AMORTIGUADORES CHORREADOS, AIRE ACONDICIONADO NO ENFRIA CORRECTAMENTE", "AMORTIGUADORES CHORREADOS, FUGA DE ACEITE EN TAPAS DE MASA DE TONEL, SIN SEGURO DE TAPIN", "AMORTIGUADORES DELANTEROS", "AMORTIGUADORES DELANTEROS DAÑADOS", "AMORTIGUADORES TRASEROS DAÑADOS (4)", "AMORTIGUADORES TRASEROS Y DELANTEROS DAÑADOS", "ANOMALIAS EN DIRECCIÓN NEUMATICO P1 DESGASTE IRREGULAR", "AT VOLCADO", "BANDEROLAS DAÑADAS", "BASE DE ABRAZADERA DE RECUPERADORA DE VAPORES ROTA", "BASE DE AMBOS FAROS NEBLINEROS DAÑADOS**", "BASE FARO DE NIEBLA DAÑADO", "BISAGRA DE CAJA DE VÁLVULAS", "BISAGRA DE CAJA DE VÁLVULAS, LA PUERTA ESTÁ FLOJA Y SE BATALLA PARA CERRAR", "BISAGRA DE LA PUERTA IZQUIERDA DE LA CAJA DE VALVULAS SE ENCUENTRA QUEBRADA**", "BISERA LADO CHOFER ROTA", "BOTON DE ELEVADOR DE LOS CRISTALES ROTO", "BOTON DE LLAMADA", "BOTON DE LLAMDA NO ENLAZA", "BOTON DE MANDO ROTO", "BOTON DE PANICO DAÑADO", "BOTON INTERMITENTE", "BOTONERA DE CONTROL DE VIDRIOS LADO OPERADOR LE FALTAN BOTONES", "BOTONERA DE ELEVADORES DE CRISTALES LADO PILOTO DAÑADA", "BOTONERA DE VENTANILLAS LADO IZQUIERDA DAÑADA", "BOTONERA ELEVADORA DE CRISTALES", "BOTÓN DE ELEVADOR VIDRIOS QUEBRADO (6-01-26)", "BOTÓN DE ELEVAR VIDRIOS QUEBRADO POR USO (7-01-26)", "BOTÓN DE LUCES INTERMITENTES SIN FUNCIONAR", "BOTÓN DE MEMBRANA DE LLAMADA DE EMERGENCIA NO FUNCIONA", "BOTÓN DE MEMBRANA DE LLAMADA DE EMERGENCIA NO FUNCIONA/ FUGA DE AIRE, SECADOR. 26/05/2026", "C, PENDIENTE DE LLEGADA DE REFACCIONES", "CABLE DE CAMARA DE REVERSA DAÑADO", "CABLE ROTO DEBAJO DE LA CABINA", "CAJA DE PLC FLOJA", "CAJA DE VÁLVULAS DAÑADA", "CAJA SUELTA DE PLC", "CALIBRACION DE EMBRAGUE", "CALZA DE SEGURIDAD EN MAL ESTADO**", "CALZA ROTA", "CAMARA DE REVERSA", "CAMARA DE REVERSA DISTORSIONADA", "CAMBIAR 3 MATRACAS 1 DEL 3 EJE LADO DERECHO 1 DEL 2 EJE LADO IZQUIERDO Y 1 DEL PRIMER EJE LADO DERECHO ESTÁN EN EL AVISO", "CAMBIO DE MATRACAS ALINEAR POLIN LARGO LADO IZQUIERDO", "CANASTA DE LLANTA DE REFACCION DESOLDADA", "CAPUCHONES DE APERTURA Y CIERRE DE PUERTAS IZQUIERDO FALTANTE, DERECHO QUEBRADO (EN TAD)", "CINCHO DE SUJECIÓN DE TAPA PRECINTANK DAÑADO", "CODIGO DE ABS", "CODIGO VGT SPN 6713 FMI:9", "COLILLA DE MATACHISPAS FALTANTE", "COMPRESOR DE A", "COMPRESOR DE AIRE ACONDICIONADO DAÑADO", "CROMATICA DAÑADA LADO DERECHO", "CUENTA LITROS AMARRADO COMPARTIMIENTO 2", "CUENTALITROS, C1 Y C2 DIRECTOS, EN ESPERA DE HOUSING Y REFACCIONES", "CÁMARA REVERSA DAÑADA", "CÁMARA REVERSA NO FUNCIONA", "DAÑO EN BISAGRA DE TAPA DE SELLO ELECTRÓNICO", "DAÑO EN BOTONERA DE ELEVADORES DEL PILOT", "DAÑO EN BOTONERA DE ELEVADORES LADO PILOTO", "DAÑO EN BROCHES CUBIERTA INTERIOR DE CABINA", "DAÑO EN EMPAQUE DE TAPIN", "DAÑO EN MANGUERAS DE AIRE, SISTEMA ELECTRICO SE ATORARON EN CARDAN", "DAÑO EN PANTALLA DE CÁMARA DE REVERSA", "DAÑO EN SELLO ELECTRÓNICO, PLACA DE TAPÍN DE COMPARTIMENTO 2 SIN IMÁN", "DAÑO EN VISERA LADO PILOTO", "DAÑO OPERATIVO: CORTE EN CARA DE LLANTA POSICIÓN 6", "DAÑO PLUMILLAS LIMPIAPARABRISAS", "DIRECCIÓN DURA", "DISPLAY DEL GENERADOR DE SELLOS DAÑADO", "EN DIAGNOSTICO", "ESTACIONARIO DEL REMOLQUE NO ACTIVA, CAMBIO DE VALVULA REPARTIDORA", "EXTRAVIO PLACA DE CIRCULACIÓN", "F.O.DAÑO EN MAZA DELANTERA DERECHA", "FALASEO EN CAMARA DE REVERSA", "FALLA DMAS", "FALLA EN BOTONERA", "FALLA EN SISTEMA A/C", "FALLA MOTOR EN TABLERO", "FALLAS ADMIN: CAJA DE VÁLVULAS DAÑADA", "FALLAS ADMIN: PANTALLA DE TCS3000 NO ENCIENDEN", "FALSO EN BOTONERA DEL FRENO DE MOTOR", "FALTA 1 TORNILLO DEL PUENTE DE MOTOR DELANTERO LADO IZQUIERDO", "FALTA BOTON PARO EMERGENCIA EN CAJA DE VALVULAS (UNIDAD PROCEDENTE TAD MADERO)", "FALTA DE ENGRASADO EN GENERAL TRACTO Y TONEL", "FALTA DE NEBLINERO LADO DERECHO (6-01-26)", "FALTA MATACHISPAS COMPLETO", "FALTA POLIN CHICO", "FALTA TORNILLO DE SOPORTE DE CABLES DE BATERÍA, TACON DE ASIENTO DAÑADO, PLAFON DE GALIBO FUNDIDO, RUIDO EXTRAÑO AL FRENAR (PENDIENTE DIAGNOSTICO) TRASERO, GRANADAS DE TENSORES DAÑADOS DERECHO E IZQ", "FENDER DAÑADO", "FILTRACION DE PRODUCTO EN EL TONEL", "FILTRO DE COMBUSTIBLE CON FUGA", "FOCO DE DIRECCIÓN LADO PILOTO FUNDIDO", "FOCO DE PORTA PLACAS ROTO DAÑO OPERATIVO", "FOCO DE REVERSA", "FUGA ACEITE", "FUGA DE ACEITE DE DIRECCIÓN EN MAGUERA", "FUGA DE ACEITE EN PARTE IZQUIERD DEL MOTOR(OPERANDO ADMINISTRADAMENTE)", "FUGA DE ACEITE POR 2DO EJE", "FUGA DE ACEITE POR FILTRO 2 EDO EJE", "FUGA DE AIRE EN CAJA NEGRA", "FUGA DE AIRE EN FILTRO FRL EN CAJA DE PLC, SE DEJÓ DIRECTO", "FUGA DE AIRE EN FILTROS REGULADORES DE LA CAJA PLC", "FUGA DE AIRE EN MANGUERA DE SERVICIO TONEL", "FUGA DE AIRE POR CAJA PLC", "FUGA DE DIESEL EN TANQUE DE COMBUSTIBLE", "FUGA DE PRODUCTO EN ÁREA DE PERCHA 10", "FUGA DE PRODUCTO POR PARTE INFERIOR DEL TONEL", "FUGA DE REFRIGERANTE POR OLIVOS", "FUGA EN TONEL", "FUGA MULTIPLE DE ESCAPE", "FUGA PRODUCTO TONEL 1", "FUNDA TÉRMICA DAÑADA", "GOMA DE PERCHA DE TONEL DAÑADA", "GOMAS DE PERCHA DETERIORADAS", "IMPRESORA DEL COMPARTIMIENTO 2 NO IMPRIME", "INSTALAR MOVON EN PARABRISAS", "LIQUIDO DE DIRECCIÓN", "LLANTA TRONADA POSICIÓN 14 (DAÑO OPERATIVO 22 MAYO)", "LODERAS DETERIORADAS", "LUCES 3 MARIAS FUNDIDAS", "MANGUERAS DE VENTEO CRISTALIZADAS", "MANIJA DE CAJA DE VALVULAS ROTA", "MANTENIMIENTO A TONEL (FALLA ADMINISTRADA)", "MATACHISPAS DESOLDADO", "MEBRANA DE LLAMADA", "MEDIDOR DIRECTO DE TONEL 2, ENGRANES DAÑADOS", "MEDIDOR DIRECTO EN TONEL 2 (25-2-25)", "MEDIDOR DIRECTO T#1", "MEDIDOR DIRECTO TONEL 1", "MEDIDOR DIRECTO TONEL 1 (14-7-25)", "MEDIDORES DIRECTOS T#1 Y T#2 (9-01-26)", "NO ABRE PUERTA POR MANIJA INTERIOR NI EXTERIOR", "NO CUENTA CON COPIA CERTIDICA DE TARJETA CIRCULACIÓN", "NO CUENTA CON PLACA DE CIRCULACION TRASERA DEL TRACTOR", "NO DA IMAGEN LA PANTALLA DEL TCS3000 DEL C2 (UNIDAD LIBRE DEL SISTEMA DE TRANSFERENCIA EN CUSTODIA)", "NO DA MARCHA SI RECONOCE EL DMAS PERO NO ENCIENDE UNIDAD EN LA TAD", "NO DESCARGA VIDEOS DE TRAFFILOG", "NO FUNCIONA AIRE ACONDICIONADO", "NO FUNCIONA EL CLIMA A", "NO GENERA SELLO ELECTRONICO EN 1ER COMPARTIMIENTO", "NO HAY COMUNICACIÓN DE CABINA CON TELÉFONO DE TORRE. EL SIM NO ESTÁ DADO DE ALTA CON EL LLAM DE LA TERMINAL., BAJO NIVEL DE LÍQUIDO LIMPIA PARABRISAS", "NO MARCA NIVEL DE UREA EN TABLERO", "NO SALE LIQUIDO LIMPIAPARABRIAS POR CHISGUETEROS", "PALANCA DE SEGURO DE QUINTA RUEDA DAÑADA", "PAPELERA ROTA DAÑO OPERATIVO", "PARABRISAS ESTRELLADO", "PEDAL CLUTCH DURO", "PENDIENTE DE ATENCIÓN (FUGA DE AIRE EN LA VALVULA DE CONTROL)", "PENDIENTE REEMPLAZO DE PLUMILLAS LIMPIA PARABRISAS", "PENDIENTE VALUACIÓN Y REPARACIÓN DE BASE DE FOCO NEBLINERO", "PLACA TRASERA DE TONEL ROTA Y SIN TORNILLOS", "PLACA TRASERA EXTRAVIADA", "PLAFON REVERSERO DAÑADO", "PLAFON TRASERO IZQUIERDO FUNDIDO", "POLÍN DE TONEL DESALINEADO Y SUELTO (1-04-26)", "POLÍN LADO IZQUIERDO APOLILLADO", "POLÍN LARGO CORRIDO", "PRESENTA ÓXIDO EN DIFERENTES ÁREAS DE TONEL", "PRESENTA ÓXIDO EN PARTES DE TONEL (20-9-24)", "PROTECTOR DE ESCAPE SUELTO", "PUERTA LADO OPERADOR NO ABRE POR DENTRO", "PUNTA DE ESCAPE FALTANTE", "RACK DE LLANTA EXTRA NO TIENE PUERTA", "REINCIDENCIA DE CÓDIGO ACTIVO SPN4375 FMI 2", "REPARACIÓN ARNES SISTEMA SCR", "REPARACIÓN DE DEFENZA TRASERA DE TONEL", "REQUIERE 4 AMORTIGUADORES EJE 2 Y 3", "REQUIERE AJUSTE DE PERCHAS", "REQUIERE CAMBIO CHICOTE PUERTA DE OPERADOR", "REQUIERE CAMBIO DE BATERIAS", "REQUIERE REMPLAZO DE BALERO DE FECHA CARDAN", "REVESTIMIENTO DE ESCAPE ROTO", "REVISAR AMORTIGUADORES DE CABINA", "REVISAR AMORTIGUADORES DELANTEROS", "REVISAR FRENOS", "SE CAYÓ FARO IZQUIERDO EN RUTA, TORNILLOS DE CARCAZA ABOCARDADOS", "SE DETECTA ESCURRIMIENTO DE PRODUCTO EN PARTE TRASERA INFERIOR DE TONEL", "SEGURO DE GOMA DE TAPA DE SELLO ELECTRÓNICO DAÑADO", "SEGURO DE LA TAPA DEL GENERADOR DE SELLOS ROTA", "SEGURO DEL GENERADOR DE SELLOS ROTO", "SIN LLANTA DE REFACCIÓN", "SOPORTE DE GUARDA DE PROTECCION DEL TUBO DE ESCAPE ROTA", "SOPORTE DE PERCHA DESOLDADO", "SUJETADOR DE EXTINTOR", "TANQUE DE COMBUSTIBLE DAÑADO CON RASPADURA (SE DESPRENDIERON SINCHOS ANTERIORMENTE, CORREO POR ASE POR RESPONSABILIDAD)", "TAPA DE SELLO ELECTRONICO", "TESTIGO EN TABLERO VSS", "TONEL 2 DIRECTO", "TORNILLO DE BASE DE FILTRO DE AIRE ROSCA DAÑADA 15/05/26", "TORNILLO DE PERCHA SUELTAS TONEL", "TORNILLOS FLOJOS DE PERCHA DE TONEL", "TORNILLOS LATERALES DE PERCHA DE TONEL FLOJOS", "TRÁMITE ADMINISTRATIVO", "TUBERÍA DESOLDADA DE LÍNEA RECUPERADORA DE VAPORES", "TUBO DE ELECTRO NIVEL DAÑADO, C1 Y C2", "TUBO DE RECOLECCIÓN DE VAPORES DESOLDADO", "TUBO DE VAPORES SUELTO", "UNIDAD NO TIENE POLIN CORTO", "VISERA LADO OPERADOR DAÑADA", "VISERA LADO PILOTO DAÑADA", "VISERA PILOTO DAÑADA (9/4/2025)", "VISERA ROTA DAÑO OPERATIVO", "VISERA ROTA LADO CHOFER", "VISERA ROTA LADO CHOFER DAÑO OPERATIVO"], "Porta llantas / Cadenas": ["FALTANTE DE CADENA EN PORTALLANTAS (DAÑO OPERATIVO, 26-11-25)"], "Rines / Llantas estructural": ["(NO COPIA CERTIFICADA, BANDERINES DAÑADOS, LUZ GALIMBO FUNDIDA, SIN REFACCION)", "1 BANDERIN TRASERO ROTO*", "2 BANDERINES ROTOS", "4 BANDERINES , MOVON Y ADAS SUELTOS", "4 BANDERINES DAÑADOS", "4 BANDERINES DAÑADOS , MOVON DESPEGADO", "4 BANDERINES DAÑADOS MOVON Y ADAS DESPEGADOS", "ABRAZADERA URV", "BANDERIN DELANTERO SUELTO", "BANDERINES", "BANDERINES DAÑADOS", "BANDERINES DAÑADOS, LUZ GALIBO FUNDIDA", "BANDERINES ROTOS", "BUJES DE TENSORES DE DIFERENCIAL EN MAL ESTADO (GARANTIA)", "CAMBIO DE POLIN LARGO LADO DERECHO, CAMBIO DE POLIN CORTO COLOCAR ESPÁRRAGO Y PLACA, COLOCAR BANDERIN TRSERO LADO DERECHO", "DAÑO EN BANDERIN TONEL", "FALLAS ADMIN: RIN DOBLADO POSICIÓN 6 (DAÑO OPERATIVO POR RODAMIENTOS) 16-02-26", "FALTA BANDERIN", "JUEGO EN PERNOS DE DIRECCION Y DESGASTE DE BUJES DELANTEROS", "LLANTA Y RIN DAÑADO POSICIÓN 6, LLANTA DAÑADA POSICIÓN 10 (29 NOV 2025) NO PROCEDENTE POR SEGURO (DAÑO OPERATIVO)", "MANOMETRO GLICERINA OSCURA", "REVISAR BUJES DE PERCHA TRASEROS, EJE RECORRIDO", "RIN 15 DAÑADO REQUIERE ODA", "SIN ORING DE TAPA DE MADIDOR C-2 18/02/2026", "TAPONES DE AUTO CONSUMO DAÑADOS, BOTONERA LADO PILOTO DAÑADA, SE CAYÓ TAPA DE CÓNCAVO (NO PRESENTA GOLPE) , CAMBIO DE BANDERINES DAÑADOS (4PZS) / 3LT. LIQ. LIMPIAPARABRISAS / TAMBORES CON CEJAS 1Y2,5Y6,9Y10 / / 1 AMORTIGUADOR EJE TRACERO TONEL POS #4", "TRES MARÍAS"], "Rombos / Porta rombos": ["1 BANDERÍN Y 4 ROMBOS DAÑADOS", "2 ROMBOS DE SEGURIDAD EN MAL ESTADO", "4 BANDERINES 3 ROMBOS Y MOVON SUELTO", "4 BANDERINES DAÑADOS , 4 PORTA ROMBOS , MOVON Y ADAS SUELTO", "5 PORTAROMBOS Y ROMBOS DAÑADOS", "6 PORTAROMBOS DAÑADOS", "8 ROMBOS ROTOS Y DESGASTADOS", "BANDERINES / LODERAS / ROMBOS", "BANDERINES DAÑADOS / BOTON DE PANICO DAÑADO / A/C NO ENFRIA /DAÑO EN ROMBOS", "BANDERINES Y PORTA ROMBO DAÑADO", "BANDERÍN DAÑADO , LUZ ABS DAÑADA Y 3 ROMBOS", "BASE DE PORTA ROMBO LADO COPILOTO ROTO", "BASE DE PORTA ROMBOS DE TONEL LADO COPILOTO ROTO", "BASE DE PORTAROMBO ROTA", "BOTON DE PANICO DAÑADO", "BOTONERA ELEVADORES VIDRIOS DAÑADA (FALLA ADMINISTRADA)", "COLOCAR MATACHISPAS, COLOCAR ROMBOS FALTANTES, COLOCAR CADENA DE BASE DE EXTINTOR", "CUBRE ESCAPE DAÑADO", "DESGASTE EN BALATAS", "FALTANTE BASE,PORTAROMBOS Y ROMBO COMPETO LADO DERECHO", "FUGA DE ACEITE EN MASAS", "LODERA DAÑADA", "MANGUERA DE VAPORES DAÑADA", "MANGUERA DE VAPORES DAÑADAS", "PORTA ROMBO DAÑADO", "REEMPLAZO DE BANDERINES TRASEROS,REEMPLAZO DE ROMBOS (5)", "REEMPLAZO DE ROMBOS (4)", "REEMPLAZO DE ROMBOS (6)", "REEMPLAZO DE ROMBOS (7),BANDERINES (2)", "ROMBOS DAÑADOS", "ROMBOS DE SEGURIDAD DAÑADOS", "ROMBOS DE SEGURIDAD EN MAL ESTADO", "ROMBOS EN MAL ESTADO", "ROMBOS Y PORTA ROMBOS ROTOS", "ROMBOS Y PORTAROMBOS DAÑADOS", "ROMBOS Y PORTAROMBOS DAÑADOS (PENDIENTE ODA)", "ROTOCHAMBER DAÑADO POSICIÓN 15-16", "SE DESOLDA PORTAROMBOS EN TONEL"], "Siniestro": ["C NO ENFRIA FALLA INTERMITENTE, FALTANTE DE CANDADO DE LLANTA DE REFACCIÓN, ASIENTO DE CHOFER DAÑADO, AJUSTE DE PERCHAS, PARRILLA FRONTAL QUEBRADA (N° REPORTE 04242204080 SINIESTRO) TUBO DE SONDA MADISON ROTO C2", "CABLES DE CORRIENTE CORTADOS, REQUIERE HABILITACIÓN", "FUGA DE AIRE EN CAJA DE PLC, EN UNIDAD DE MANTTO REQUIERE REEMPLAZO, IMPRESORA SE TRABA AL INSTALAR CINTA, SEGURO DE PUERTAS DERECHA E IZQUIERDA, REFLEJANTE LATERALES DAÑADOS, TORNILLO DE PERCHA DE TONEL REQUIERE AJUSTE, AMORTIGUADORES TRASEROS CHORREADOS 2PZAS, ABRAZADERA DE DEFLECTOR DE CALOR DESOLDADO, DESGASTE EN FORRO DE ASIENTO, FUGA DE AIRE EN PISTON DE VALVULA OBLEA, INGRESA AGUA EN EL INTERIOR DE CABINA, GOLPETEO DEBAJO DE CABINA (PROBABLEMENTE AMORTIGUADORES DE CABINA", "GOLPE EN CAJA DE VALVULAS Y ESCALON LADO COOPILOTO//YA SE CUENTA CON OA", "GOLPE EN PARTE DELANTERA", "GOLPE EN TAPA DE BATERÍAS", "GOLPE FACIA DELANTERA", "REVISION DE PERNOS DE DIRECCIÓN, A", "REVISIÓN DE SINIESTRO 04260911666", "SINIESTRO (DAÑO SEVERO EN UNIDAD)", "SINIESTRO EN CARRETERA. CAMIÓN VOLTEADO", "SINIESTRO EN LADO DERECHO DE LA UNIDAD 3 NEUMATICOS", "SINIESTRO:DAÑO EN FASCIA, PARRILLA, FARO NEBLINERO, CUBIERTA CENTRAL DE FASCIA", "SINIESTRO:GOLPE EN PUERTA CAJA VALVULAS", "VOLCADURA SOBRE SU COSTADO DERECHO"], "Tapón / Tanque autoconsumo": ["DAÑO EN PUERTA DE AUTOCONSUMO, PUERTA LADO IZQUIERDO", "DAÑO EN TAPÓN DE DIÉSEL", "FALTANTE DE TAPÓN TANQUE COMBUSTIBLE (DAÑO OPERATIVO, 04-05-26)", "PERNO DE TANQUE DE TANQUE DE AUTOCONSUMO", "TANQUE DE DIESEL LADO PILOTO NO CUENTA CON TAPON", "TAPON DE AUTO CONSUMO", "TAPON DE TAPIN NO LO TRAE", "TAPÓN DAÑADO DE COMBUSTIBLE (DAÑO OPERATIVO 13-05-26)", "TAPÓN DE TANQUE AUTOCONSUMO DAÑADO", "TAPÓN DE TANQUE AUTOCONSUMO DAÑADO (6-01-26)", "TAPÓN TANQUE AUTOCONSUMO DAÑADO"], "Tonel - Oxidación / Pintura": ["ABOLLADURA, DESPRENDIMIENTO DE PINTURA EN TONEL", "ABRAZADERA TIPO U DE TUBERÍA DE VAPORES DAÑADA", "BOTONERA DE CONTROL CRUCERO DAÑADA , TAYONES EN FASCIA TRASERA Y VINILES, ASIENTO DE OPERADOR ROTO, PORTA ROMBOS Y ROMBOS DAÑADOS , NO FUNCIONA SWITCH DE LUCES, TECLA LAMP CHECK Y DE SUSPENSIÓN TRASERA", "DAÑO EN BANDERINES", "DAÑO EN BASE FENDER TRACTOR (EXCESO DE OXIDO)", "DEFENSA TRASERA DAÑADA**VINILES LATERALES EN MAL ESTADO", "DESGASTE EN VOLANTE", "DESPRENDIMIENTO DE VINIL DEL TANQUE", "FALTA DE PINTURA EN TANQUE Y DETALLADO NO. 162137982", "FALTA TORNILLERÍA EN ESCALÓN SUPERIOR DE DEFENSA TRASERA", "FUGA POR MAZA P1", "MALLA CUBRE ESCAPE DAÑADA", "NO SIRVE MEMBRANA DE LLAMADA", "OXIDACIÓN EN CUELLO DE DOMO Y TUBO DE ELECTRONIVEL", "OXIDO EN DIFERENTES AREAS DE TONEL", "OXIDO EN LA PLAFONERA LADO DERECHO", "OXIDO EN PORTA PLACA", "PINTURA MANCHADA", "POLIN PEQUEÑO RECORRIDO", "REVISIÓN COMPLETA DE SUSPENSIÓN", "RIN DE REFACCION OXIDADO", "RIN OXIDADO", "TORNILLERÍA SUELTA EN CAMA DE TONEL", "TORNILLO CAPADO EN PERCHA DELANTERA", "VINILES DESGASTADOS"], "Tonel - Poros / Soldadura": ["ABRAZADERA INFERIOR DE ESCAPE EXTERNO CON DAÑO", "ABRAZADERA TIPO U DE VAPORES CON DAÑO EN SOLDADURA", "AMBOS FENDERS CON DAÑO EN SOLDADURA", "BASE DE FILTRO COMBUSTIBLE CON FISURA (SE SOLICITA PARA REEMPLAZO CON TIEMO LLEGADA 12-15 DÍAS) 07-05-26", "BASE DE LODERA FISURADA", "BOTONERA DE RELEVADORES DE VENTANAS SIN BOTONES", "BOTONERA DE VIDRIOS DAÑADA", "CAJA DE VALVULAS FISURADA", "COLILLA DE ESCAPE DESPRENDIDA", "DESGASTE EN VOLANTE", "DOS POROS EN TONEL", "FALLA SELLO ELECTRONICO", "FALTA TORNILLERÍA EN ESCALÓN SUPERIOR DE DEFENSA TRASERA", "FISURA EN BASE DE MATACHISPAS", "FISURA EN CAJA DE VÁLVULAS (NO PRESENTA GOLPE)", "FISURAS EN CHASIS**", "FISURAS EN SOPORTE DE DEFENSA TRASERA (REINCIDENCIA)", "FUGA DE REFRIGERANTE ENCIMA DE LA MARCHA", "FUGA PRODUCTO PORO DE LA TAPA DEL TONEL TRASERO", "GRIETAS EN CHASIS TONEL", "MALLA CUBRE ESCAPE FLEXIBLE CON DAÑO", "MOBON CAÍDO", "NO SIRVE FARO NEBLINERO", "NO SIRVE MEMBRANA DE LLAMADA", "OXIDO EN PASARELA", "OXIDO EN PORTA PLACA", "PLANCHA DE PERNO REY LADO DERECHO SE ENCUENTRA FRACTURADA", "POLIN DERECHO FRACTURADO", "POLÍN CORTO CAÍDO Y CANASTILLA PORTA LLANTA CON SOLDADURA ROTA CARGA SOLO DIESEL", "POLÍN GRANDE CON DEFORMACIÓN", "PORO EN CAMPANA DE DESCARGA", "PORO EN PARTE DELANTERA DEL TONEL", "PORO EN PARTE TRASERA DEL TONEL", "PORO EN TONEL", "PORO EN TONEL REINCIDENCIA", "REVISIÓN COMPLETA DE SUSPENSIÓN", "SIN TORNILLO E HILO DE TORNILLO DAÑADO DE BASE DE PORTA LLANTAS", "SOPORTE DE TUBO RV FRACTURADO", "TAPA DE BATERIAS QUEBRADA Y FISURADA", "TORNILLERÍA SUELTA EN TONEL", "TORNILLO CAPADO EN CAMA DE TONEL", "VISERA CONDUCTOR DAÑADA", "VÁLVULA DE DESFOGUE EN CAJA DE VÁLVULAS DAÑADA"]}, "Diferencial": {"Balero / Rodamiento": ["BALERO CENTRAL DAÑADO"], "Fuga de aceite": ["FUGA DE ACEITE EN DIFERENCIAL EJE 2", "FUGA DE AIRE EN FILTRO REGULADOR CAJA PLC, SE DEJÓ DIRECTO"], "Otros - Diferencial": ["DESPRENDIMIENTO DE PINTURA EN MAZAS DE TRACTO", "DETERMINAR PRESENCIA DE PORO EN TONEL", "MEDIDOR DIRECTO EN TONEL 2 (14-1-26)", "PORO EN PARTE FRONTAL DE TONEL (UBICADO ENTRE CABINA Y TONEL)", "REQUIERWE TORQUE EN TORNILLOS DE PERCHA"]}, "Dirección": {"Aceite dirección hidráulica": ["BAJO NIVEL EN DEPÓSITO DE DIRECCIÓN HIDRÁULICA", "FUGA DE PRODUCTO EN EL DOMO", "MANCHA DE ACEITE EN BOMBA HIDRAULICA"], "Brazo viajero / Terminales": ["CAMBIAR BRAZO VIAJERO"], "Dirección dura / Desviación": ["DIRECCION DURA", "PROBLEMAS EN DIRECCIÓN, DESVIACIÓN A LA DERECHA"], "Otros - Dirección": ["BOTÓN DE ELEVADOR VIDRIOS QUEBRADO", "CAMBIO DE CAJA Y BOMBA DE DIRECCION VOLANTE DURO, CODIGO DE FALLA EN TABLERO SENSOR DE VELOCIDAD DE TURBO SPN:103 FMI:18", "DIRECCIÓN SE GIRA A LA DERECHA", "MEDIDOR DIRECTO T#2 (9-01-26)", "REVISAR FRENOS, BALATAS Y MATRACAS, REALIZAN BASTANTE RUIDO Y PÉRDIDA PPTENCIA EN FRENOS", "SELLO ELECTRÓNICO CON FALLA", "TAPÓN DAÑADO ROSCA (NO CIERRA CON LLAVE)", "TEMPERATURA ALTA EN EJE 1", "TEMPERATURA ALTO EN EJE 1", "TORNILLO DE DEPÓSITO DIRECCIÓN FALTANTE (22-4-26)"], "Pernos / Bujes dirección": ["MOVIMIENTO EN LLANTAS DE DIRECCIÓN POR JUEGO EN PERNOS"]}, "Eje": {"Cruceta / Yugo / Cardan": ["BIRLO DE FLECAHA LATERAL 2DO EJE DERECHO CAPADO, TORNILLO DE TENSOR 3ER EJE DERECHO, JUEGO EN YUGO DE TRANSMISION", "CRUCETA Y YUGO DAÑADOS", "UNIDAD NO PUEDE AVANZAR, SE DETECTA FLECHA CAÍDA"], "Maza / Retén": ["ACEITE PARA MAZA DE TONEL", "BALATAS TONEL", "BOTONERA LADO CHÓFER", "EMPAQUES DE MASAS CHORREADAS", "ESCALERA GOLPEADA", "ESPEJO RETROVISOR CON VIBRACION", "FALLA EN COMPARTIMENTO 1 Y 2 . FUGA DE ACEITE EN MAZA DE AMBOS LADOS DEL EJE DELANTERO. MARCHA SE QUEDA PEGADA. BANDERINES DAÑADOS 4 PIEZAS", "FALTA BOTON INTERLOCK", "FUGA DE ACEITE POR RETENES DE RUEDA", "FUGA DE ACEITE POR TAPAS DE MAZA DE TONEL", "LIQ. LIMPIAPARABRISAS", "MANOMETRO DAÑADO", "PINTURA DE TONEL DAÑADA", "PLUMAS LIMPIAPARABRISAS", "ROTOCHAMBER DAÑADO", "SELLO DE VITON 10\" ESCOTILLA", "TAPA MAZA TONEL", "TAPONES DE AUTOCONSUMO DAÑADOS"], "Otros - Eje": ["ARNES DE CAMARA DE REVERSA DAÑADO", "BAJO REMANENTE DE BALATAS DE TONEL", "BANDERINES ROTOS", "BUJES DE GAVILANES DE TONEL DAÑADOS", "BUJES ROTO DE TENSOR DE DIFERENCIAL", "CAMARA DE REVERSA BORROSA", "ESCALERA DESOLDADA Y DOBLADA", "FALSO EN BOTON DE FRENO DE MOTOR", "FENDER DOBLADO AMBOS LADOS", "FUGA DE ACEITE EN LAS 4 MASAS DEL TONEL", "GUIAS Y CONTRA GUIAS DE COFRE DAÑADAS", "LODERAS DELANTERAS DESPRENDIDAS", "MEDIDOR AMARRADO C2 (HABILITADA POR LA TAD)", "OXIDO EN EL TANQUE A LA ALTURA DEL DOMO NO. 162363122", "PLAFON DELANTERO LADO IZQUIERDO FUNDIDO", "PLAFONES DE REVERSA REQUIEREN CAMBIO", "PORTA LODERA Y PORTA PLAFONES DOBLADO LADO IZQ", "REVISAR CLIMA, NO FUNCIONA", "SE REQUIERE DIAGNOSTICO DEL CUENTALITROS C2(SE DEJO DIRECTO) )", "SEGURO DE ARNES DE FLOTADOR ROTO", "TOLVA DE ESCAPE CUARTEADA", "UNIDAD EN AGENCIA PARA REVISION DE CLIMA Y TRONIDO EN SUSPENSION DELANTERA Y TRASERA", "VISERA LADO CHOFER ROTA", "VISERA LADO CONDUCTOR SE TRABA"]}, "Ejes (Tonel)": {"Fuga / Poro en tonel": ["FUGA DE PRODUCTO EN TONEL, REQUIERE SOLDADURA EN RECUPERADORA DE VAPORES", "SOLDAR PORO EN TONEL PARTE TRASERA LADO DERECHO. 15/5/26"], "Otros - Ejes Tonel": ["FALLA DE MOTOR, PERDIDA POTENCIA", "GOLPE EN ESPEJO LADO PANTALLAS", "JUEGO PERNOS DE DIRECCION, BRAZO VIAJERO Y BALEROS DE RUEDA"]}, "Electrónica Sistema Cuenta Litros": {"Otros - Cuenta Litros": ["BOTÓN DE VIDRIOS ELECTRICO DAÑADO LADO CHOFER", "DAÑO EN ESCALERA, LODERA Y PUERTA CABINA", "DEPOSITO DE LIQUIDO LIMPIAPARABRISAS", "FALLA EN IMPRESORA", "FILTRO DE CABINA", "FUGA DE AIRE EN FLT T#2 EN CAJA PLC (5-11-25)", "FUNDA TERMICA Y EMPAQUE DE ESCAPE", "MEDIDOR DIRECTO T#1", "PENDIENTE CAMBIO DE FILTRO REGULADOR EN CAJA PLC Y ELECTROVALVULA", "PINTURA QUEBRADA DE REFUERZOS ESTRUCTURALES", "RUIDO EXCESIVO EN CUENTA LITROS COMPARTIMENTO 1"], "Pantalla TCS3000": ["BOTÓN VERDE DE PANTALLA TCS3000 T#2 NO PERMITE CARGA NI DESCARGA", "NO ENCIENDE PANTALLA DE TCS3000 EN TONEL 1, NO FUNCIONA PROCESADOR (FALLA ADMINISTRADA DESDE: 4-12-24)", "PANTALLA NO ENCIENDE DE TCS3000 DE TONEL 2", "REQUIERE REEMPLAZO DE BOTÓN CAJA PLC TCS3000"], "Sello electrónico": ["TAPA DE SELLO ELECTRONICO ROTO"], "Sonda Madison": ["SONDA MADISON DAÑADA", "SONDA MADISÓN DAÑADA"], "Válvula Betts": ["SIN PLATO DE VÁLVULA BETTS (4-11-25)", "VÁLVULA BETTS DE TONEL 2 ABIERTA", "VÁLVULA BETTS SE CIERRA Y CORTA CARGA"]}, "Embrague": {"Disco / Plato": ["AJUSTE DE CLUTCH (FALLA ADMINISTRADA)", "BOTONERA ELEVADORES VIDRIOS DAÑADA", "CLUTCH DEMASIADO DURO", "CLUTCH DURO O DAÑADO", "REEMPLAZO DE DISCO DE PARO", "SIN BANDERIN TRAZERO", "VALORAR CLUTCH (NO ENTRAN LAS VELOCIDADES), PERNOS DE DIRECCION CON JUEGO"], "Otros - Embrague": ["4 ROMBOS DAÑADOS (02/03/26)", "7 PORTAROMBOS DAÑADOS (02/03/26)", "ABRAZADERA DESOLDADA DE TUBO RECUPERADOR DE VAPORES", "AJUSTE DE PERCHAS", "C AMARRADO", "CANASTILLA DESPRENDIDA C1 Y C2", "COMPRESOR DE A", "CÓDIGOS DE FALLA EN TABLERO SPN 3610 FMI 20", "DAÑO EN ESCALERA (SINIESTRO REPORTADO)", "FALLA EN BOCINA DMAS", "FALLA EN BOTÓN FRENOS MOTOR", "FALLA EN PANTALLA DE CAMARA DE REVERSA", "FALLA EN SISTEMA DE EMBRAGUE", "FALSO EN BOTONERA DE FRENO DE MOTOR", "FALTA SEGURO DE PERNO DE TAPIN COMPARTIMENTO 1", "FALTANTE DE ANTENA DE BLACKBOX", "FALTANTE DE CANDADO DE LLANTA DE REFACCIÓN", "FOCO H4 DAÑADO", "FUGA DE ACEITE POR SEGUNDO EJE (13/02/26)", "FUGA DE AIRE EN MINI FILTRO REGULADOR DE BLACKBOX", "MOLDURA DE MANIJA ROTA LADO DERECHO", "PENDIENTE FILTROS LICAMEX 27/5/26", "REEMPLAZO DE EMBRAGUE", "REQUIERE AJUSTE DE PERCHAS (13/02/26)", "REQUIERE REEMPLAZO VÁLVULA VENTEO (24-1-26)", "REVISAR CONTROL CRUCERO NO FUNCIONA, REVISAR FLOTADOR DE TANQUE DE AUTOCONSUMO MARCA 1", "REVISION DE EMBRAGUE, NO ENTRAN BIEN LOS CAMBIOS", "SENSOR DE SOBRELLENADO CON FALLA", "TAPA DE FILTRO DIÉSEL DAÑADA", "TAPA DE IMPRESORA NO TRABA (SE CAE)", "TUBO DE SONDA MADISON ROTA C1 Y C2"], "Pedal / Hidráulico": ["FALLA EN EMBRAGUE, VARILLAJE DE PEDAL", "FALLA EN SISTEMA DE EMBRAGUE, EL PEDAL PRESENTA MUCHA RESISTENCIA PARA ACCIONARLO CON EL PIE Y NO REGRESE DE MANERA NATURAL HATA QUE DE MANERA MANUAL LO REGRESAS"], "Ruido en embrague": ["RUIDO AL ACCIONAR EL EMBRAGUE, POSIBLE DAÑO EN COLLARÍN", "RUIDO AL PISAR EMBRAGUE", "RUIDO ANORMAL AL ACCIONAR EMBRAGUE"], "Se patina / Duro": ["EMBRAGUE MUY DURO (REINCIDENCIA)", "PROBLEMAS EN EMBRAGUE, ESTÁ DURO AL ACCIONAR Y NO AGARRA AJUSTE", "PROBLEMAS EN EMBRAGUE, SE PATINA"]}, "Escape": {"Fuga de gases a cabina": ["FUGA DE GASES DE ECAPE SE METE A CABINA", "FUGA DE GASES DE ESCAPE POR UNIÓN DE TUBO DE ESCAPE Y SALIDA DEL TURBO, LOS GASES SE METEN A LA CABINA.**CAMBIO DE GOMAS Y TORNILLOS DE LAS PERCHAS DE TONEL (DESGASTOS)", "SE METE HUMO DEL ESCAPE A LA CABINA"], "Malla de escape": ["MALLA DE ESCAPE DAÑADA"], "Matachispas": ["ACEITE DE MOTOR", "ACEITE PARA MAZAS EJE TONEL", "AT SIN MATACHISPAS NI COLILLA DE ESCAPE", "BALATAS EJES TONEL", "COLILLA DE MATACHISPAS FLOJO, FILTRO DEL PLC DAÑADO", "COLOCAR MATACHISPAS, COLOCAR ROMBOS FALTANTES", "EJE 2 NO SON LAS BALATAS", "EMPAQUE DE BRIDA DEL TUVO DE VAPORES DAÑADO", "FALTAMATACHISPAS.FALTAN DOS BANDERINES DEL TONEL", "FALTANTE DE MATACHISPAS POR VIBRACIÓN", "FUGA DE PRODUCTO EN DOMO Y MANGUERA RECUPERADORA DE VAPORES", "LIQ LIMPIAPARABRISAS", "MATACHISPAS", "MATACHISPAS FALTANTE.PENDIENTE NUMERO DE GUIA PARA SU RECOLECCIÓN", "MATACHISPAS NO CUENTA CON PUNTA DE ESCAPE", "NO CUENTA CON MATACHISPAS", "PLUMAS LIMPIAPARABRISAS", "PORTA LODERAS LADEADAS", "REJILLA DE COFRE IZQUIERDA DAÑADA, ROMBOS DAÑADOS, SE RETIRO MATACHISPAS POR DAÑO EN ABRAZADERA, FUGA DE AIRE EN CONEXIÓN DE GOBERNADOR , CAMBIO DE PLUMAS LIMPIAPARABRISAS, PALANCA DE API SIN TORNILLO C2, BOTONERA DE VIDRIOS DAÑADA", "REMPLAZO DE CABLE CHIRRIÓN EN PUERTA", "SE CAE MATACHISPAS", "SE ZAFÓ MATACHISPAS, FUGA DE PRODUCTO EN DOMO", "SIN MATACHISPAS", "SIN MATACHISPAS0", "SIN TORRETA", "TAPON DE AUTOCONSUMO DAÑADO"], "Otros - Escape": ["2 AMORTIGUADORES TRASEROS CHORREADOS", "2 BANDERINES DAÑADOS , SIN MATA CHISPA , 4 ROMBOS DAÑADOS", "AIRE ACONDICIONADO NO ENFRIA", "ALERO DE AIRE DE CABINA NO TRAE", "AMORTIGUADORES EN MAL ESTADO (6)", "ASPA DEL VENTILADOR SE ENCUNTRA QUEBRADA", "BAJO VOLTAJE DE BATERIAS", "BASE DE PORTA ROMBO TRASERO FISURADO", "BASE DE POSTE DE CABINA DESPRENDIDO", "BOTON DE CONTROL DE VENTANILLA QUEBRADO**", "BOTONERA DE CONTROLES DE VIDRIO CON FALLA", "BOTONERA DE CRISTAL DAÑADA", "BOTONERA ELEVADORES VIDRIOS DAÑADA", "BUJES BRAZOS TENSORES DE DIFERENCIAL", "CALZAS ROTAS AMBOS LADOS", "CAMARA DE REVRESA BORROSA, EN ESPERA DE EVIDENCIAS Y COTIZACIÓN PARA PODER CUTORIZAR", "CLIMA DEJA DE ENFRIAR", "DAÑO EN BASE Y CÁMARA DE DOMO, FUGA DE AIRE EN CONEXIÓN DE TRANSMISION, BOLSA DE AIRE CON FUGA, AMORTIGUADOR DELANTERO DAÑADO , ESPEJO CONCAVO DERECHO FLOJO, SWITCH DE PERMISIVO DAÑADO C1 Y C2", "DAÑO EN ESPEJO LADO COPILOTO", "DEFENSA TRASERA CHUECA", "ESCAPE SE CAE EN RUTA", "FALDON DELANTERO DOBLADO AMBOS LADOS", "FALLA EN PALANCA DE DIRECCIONALES", "FALLA EN SELLO ELECTRÓNICO, TAPÍN DE DOMO DE COMPARTIMENTO 2 NO TIENE IMÁN", "FALLAS ADMIN 3-02-26: BASE DE ESCAPE DAÑADO", "FALTA DE MATA CHISPAS", "FALTA DE MATACHISPA", "FALTANTE DE MANIVEL TONEL", "FENDER FALTANTE", "FUGA DE AIRE DEL FILTRO REGULADOR DE AIRE", "FUNDA DE SONDA MADISON ROTA", "FUNDA TERMICA", "FUNDA TERMICA Y JUNTA DE ESCAPE", "GOLPE EN ESCALERA DE TONEL PARTE INFERIOR", "GOMAS DE PERCHAS DE TONEL COMPRIMIDAS", "HUMO EN CABINA", "INTER NO ACTIVA", "MANIJA DE PUERTA ROTA", "MEDIDOR DIRECTO TONEL 1", "NO TIENE EL IMAN DEL SENSOR DEL TAPIN C1", "PENDIENTE HACE VIAJE DE PRUEBA", "PLAFON DE STOP", "REVESTIMIENTO DE ESCAPE ROTO", "ROMBOS DE SEGURIDAD EN MAL ESTADO", "SE CAE MATACHISPA EN RUTA (NO SE RECUPERO)", "SOLDADURA DE ESCALERA ROTA", "TAPÓN DE DIESEL DAÑADO", "TORNILLO PARA BASE DE CATALIZADOR, TORNILLO BASE DE ESCAPE, TAPA Y GOMA DE PRECINTANK CON FECHA DE 01/03/2026", "TORNILLOS DE PERCHAS FLOJOS", "TRÁMITE ADMINISTRATIVO", "VISERA ROTA LADO CHOFER DAÑO OPERATIVO"], "Soporte / Abrazadera": ["ABRAZADERA DE ESCAPE DESPRENDIDA", "AMORTIGUADOR DE COFRE ESCURRIDO", "AMORTIGUADORES ESCURRIDOS", "APERTURA DE CAJA DE VÁLVULAS DESPRENDIDA", "DOS ABRAZADERAS DE TUBO DE ESCAPE DAÑADAS (SOLDADURA)", "FUGA DE ACEITE POSIBLE TAPA DE DISTRIBUCIÓN", "FUGA DE GASES EQUIPO POSTRATRAMIENTO", "FUGA DE GASES POR ABRAZADERA DE TURBO", "NO SE APRECIA EL SELLADO ELÉCTRICO", "NO TIENE LOS TORNILLOS TRASEROS DE SOPORTE DEL CUENTALITROS", "ROMBOS EN MAL ESTADO", "ROMOBOS Y PORTA ROMBOS DAÑADOS", "SOPORTE DE ESCAPE DESOLDADO", "SOPORTES DEL ESCAPE ROTO", "TAPA DE MASA DAÑADA"], "Tolva / Cubre escape": ["CUBRE ESCAPE DAÑADO", "MALLA CUBRE ESCAPE DAÑADA", "SOPORTE DE TUBERÍA URV", "TOLVA DEFLECTORA DE ESCAPE ROTA, TUBO DE SONDA MADISON ROTO, JUNTA DE COPLE DE DESCARGA DAÑADO, PELDAÑO DE ESCALERA ROTO"], "Tubo / Manguera flexible": ["FUGA REFRIGERANTE POR MANGUERA DE RADIADOR", "MANGUERA DE VAPORES DAÑADA", "MATACHISPA DESOLDADO", "ROMBOS EN MAL ESTADO", "TUBERÍA ESCAPE DAÑADA, FILTRACIÓN DE GASES A CABINA", "TUBO FLEXIBLE DAÑADO", "TUBO FLEXIBLE DE ESCAPE DAÑADO (4-02-26)"]}, "Frenos": {"ABS / Sensor frenos": ["* ⁠REVISAR ABS ARROJA ALERTA EN DISPLAY. (EMPEZÓ DESPUÉS DE QUE SE LE CAMBIÓ EL MUELLE DELANTERO QUE SE LE TRONÓ)", "CODIGO ACTIVO ABS", "CÓDIGOS ABS", "NO FUNCIONA FRENO DE MOTOR Y TESTIGOS ACTIVOS DE ABS", "SENSOR ABS", "TESTIGO ABS EN TABLERO"], "Balatas": ["* ⁠REVISAR BALATAS", "BAJO REMANENTE DE BALATAS DEL TONEL", "BALATAS CON BAJO MILIMETRAJE", "BALATAS CRISTALIZADAS Y FALTA RECTIFICAR(25/03/26)", "BALATAS EJE TRASERO CON DESGASTE, EJE CORRIDO", "BALATAS TRASERAS AL MINIMO", "CAMBIO DE BALATAS TRASERAS DESPRENDIDAS", "NO FRENA CORRECTAMENTE (CAMBIO DE BALATAS)", "REEMPLAZO DE BALATAS 3ER EJE, TUERCA BOLSA DE SUSPENSION, TORQUE DE SUSPENSION EN GENERAL", "REQUIERE REEMPLAZO DE BALATAS DELANTERAS", "REVISION DE BALATAS Y MATRACAS NO FRENA CARGADA, REVISION Y AJUSTE DE EMBRAGUE"], "Freno de motor": ["CÓDIGO ACTIVO EN TABLERO (REVISAR MOTOR) FRENO DE MOTOR SE ACTIVA SIN ACCIONAR BOTONERA"], "Matracas / Ajustadores": ["* ⁠REVISAR MATRACAS DE FRENOS REPORTAN QUE NO FRENA", "BAJO NIVEL DE ACEITE EN MAZAS DEL TONEL", "CAMBIO DE DOS MATRACAS TRASERAS SEGUNDO Y TERCER EJE LADO DERECHO (SE ENCUENTRAN EN EL AVISO)", "CAMBIO DE DOS MATRACAS, (UNA DELANTERA LADO DERECHO Y UNA DEL SEGUNDO EJE LADO DERECHO), CAMBIO DE TORNILLO DE TENSOR LATERAL LADO IZQUIERDO SEGUNDO EJE,CAMBIO DE GOMA DE PERCHA LADO DERECHO PARTE TRASERA", "DAÑO EN BANDERINES", "DAÑO EN ROTOCAMARA Y MATRACA", "DAÑO EN VÁLVULA FESTO DE PARO DE EMERGENCIA", "FUGA DE AIRE POR FILTRO FESTO EN CAJA DE VÁLVULAS", "NO SIRVE MEMBRANA DE LLAMADA", "REEMPLAZO DE MATRACAS TRASERAS LADO PILOTO Y COPILOTO"], "Otros - Frenos": ["* ASIENTO DE CONDUCTOR ROTO", "* ⁠REVISAR AIRE ACONDICIONADO NO ENFRÍA", "* ⁠REVISAS SUSPENSIÓN EN GRAL", "AL FRENAR SE JALA A LA DERECHA", "AMORTIGUADORES CON BAJO REMANENTE, PERO ASE NO DA AUTORIZACION DE CAMBIO, AMORTIGUADORES SON LOS DE FABRICA", "AMORTIGUADORES TRASEROS, MUELLES OCUPAN BRIO,SOPORTES DEL POST ENFRIADOR DAÑADOS, 24/03/2026", "BANDA RECHINA(25/03/26", "BASE DE EXTINTOR SUELTA", "BASE DE FARO NEBLINERO ROTA", "BASE PORTA ROMBOS DESOLDADA (9/01/26)", "BOTIQUIN DE INSUMOS CADUCADOS", "BOTON DE LLAMADA NO ENLAZA", "BOTONERA VIDRIOS LADO OPERADOR DAÑADA", "BOTONES DE ELEVADOR DE VIDRIO QUEBRADO PILOTO", "C1, ENGRANDE LATERAL DAÑADO,EN ESPERA DE DIAGNOSTICO, SE DEJA DIRECTO", "CANASTILLA SUELTA PARCIALMENTE T2 (28--08-24)", "CUENTA LITROS DAÑADO EN ESPERA DE REFACCIONAMIENTO", "DAÑO EN PLUMAS LIMPIAPARABRISAS", "ESPEJO CÓNCAVO", "FALLA EN SISTEMA AUXILIAR DE FRENADO", "FALLA EN SISTEMA FRENOS (NO AGARRA ESTACIONARIO)", "FALTA DE PINTURA EN TANQUE Y DETALLADO NO. 162361749", "FALTANTE LODERA TRASERA LADO COPILOTO", "IMPRESORA NO FUNCIONA", "LIGA RECUPERADORA DE VAPORES", "LUCES DE 3 MARIAS Y PLAFON AMBER NO PRENDEN", "LUCES DE STOP CON BAJA INTENSIDAD", "NEUMATICO P#2 DAÑADO", "PAPELERA DAÑADA", "PENDIENTE COLOCACION DE TUBO (SOPORTE) DE FENDER DERECHO", "PENDIENTE DE REEMPLAZO DE CANDADO DE LLANTA DE REFACCION", "PENDIENTE REEMPLAZO DE PLUMILLAS LIMPIAPARABRISAS", "PERCHERO ROTO DAÑO OPERATIVO", "PROBLEMAS EN FRENOS DE TONEL, SE ACTIVAN REPENTINAMENTE", "REVISION DE FRENOS BAJOS", "SIN LODERA IZQUIERDA (9-10-25)", "TECLADO DE TCS 3000 C-1 NO FUNCIONA", "TUBO DE SONDA MADISON QUEBRADAS LOS 2 COMPARTIMIENTO, GRANADAS DE TENSORES DAÑADOS, CUENTA LITROS AMARRADO C-1 (INTERVENIDO POR PEMEX, RUIDO EXTRAÑO AL FRENAR (PENDIENTE DIAGNOSTICO), GRANADAS DE TENSORES DAÑADOS DERECHO E IZQ"], "Sistema neumático frenos": ["FUGA DE AIRE CONEXION DE GOBERNADOR", "FUGA DE AIRE EN FILTRO REGULADOR DE CAJA VÁLVULAS", "FUGA DE AIRE EN VALVULA AL PISAR EL PEDAL DE FRENO", "RUIDO EN EL PEDAL DE EMBRAGUE Y FRENOS EN GENERAL", "TAMBORES OVALADOS"]}, "Llantas": {"Bajo milimetraje": ["BAJO MILIMETRAJE POSICION #1 Y #2"], "Otros - Llantas": ["(SENSOR DE FLUJO 12/05/2023) RECUBRIMIENTO DE VOLANTE 20/06/2025.VISERA LADO PILOTO 14/03/2024", "35. CAJA DE VÁLVULAS TALLER EXTERNO FISURA EN CAJA DE VALVULAS", "8 CARTELES ROTOS", "BAJO MM EN LLANTAS DEL ÚLTIMO EJE", "BOTIQUÍN CAÍDO", "BOTONERA LADO PILOTO DAÑADA 02/06/2025", "CANASTILLA DESOLDADA DE COMPARTIMENTO 1", "DAÑO EN ASIENTO", "DESP. POS. 16", "LLANTAS TALLER EXTERNO LLANTAS POSICION 1 Y 6 N MAL ESTADO", "LLAVE DE PASO DE CAJA DE VÁLVULAS DESOLDADO", "MOBON CAÍDO", "POS 1 , 5 , 6 7, 8 , 9 Y 10A 10", "SINIESTRO EN ROMBOS Y PORTAROMBOS DELANTEROS (04260731286", "SINIESTRO: GOLPE EN DEFENSA DELANTERA, DAÑO EN PORTAROMBOS"], "Ponchadura / Desponche": ["DESPONCHE POS 9 Y 10", "LLANTA PONCHADA POS 1", "LLANTA PONCHADA POS 8"], "Reemplazo": ["REQUIERE REEMPLAZO DE LLANTAS DELANTERAS POR BAJO MMS PROFUNDIDAD, REEMPLAZA LLANTA POS 2 CON LLANTA EXTRA", "REQUIERE REEMPLAZO DE LLANTAS POR ENCONTRARSE EN 3 MMS DE PROFUNDIDAD, POSICIONES 5,8,10,13,14"]}, "Medidor Cuenta Litros": {"Medidor directo": ["MEDIDOR CUENTA LITROS SIN INTERNOS 1ER COMPARTIMIENTO (7-01-26)", "MEDIDOR DIRECTO EN TONEL 2 (22-2-25)", "MEDIDOR DIRECTO TONEL 1 (21-5-25)", "MEDIDOR DIRECTO TONEL 2"], "Otros - Medidor": ["ABOLLADURA Y DESPRENDIMIENTO DE PINTURA DE TONEL, DESPRENDIMIENTO DE VINIL DEL TANQUE", "ABRAZADERA TUBO DE VAPORES DAÑADA", "AMORTIGUADORES TRASEROS DAÑADOS", "BASE DE BANDERIN TRASERO CON FISURA EN SOLDADURA", "BASE DE SUJECION DE DEFLECTOR DE ESCAPE DESOLDADA", "BOLSA DE AIRE DE ASIENTO SE DESCARGA", "CÓDIGOS SCR ACTIVOS", "DAÑO EN BANDERINES", "DAÑO EN FOCO Y PLAFON PORTA PLACA", "DIREECION VIBRA AL IR EN RUTA", "EMPAQUES DE ACOPLAMIENTO DE VALVULAS API EN MAL ESTADO (2)", "FALTA DE CINCHO SUJECIÓN TAPA PRECITANK", "FUGA DE ACEITE POR TODAS LAS MAZAS", "FUGA DE AIRE EN FILTRO LUBRICADOR DEL PLC", "FUGA DE AIRE EN MULTIPLICADOR DE PALANCA DE CAMBIOS, DAÑO EN PORTA LODERA LADO IZQUIERDO", "INSTALAR BOTIQUIN, SUELTO EN CABINA", "JUEGO PERNOS DIRECCION", "MANGUERA CON FUGA DE ACEITE DE DIRECCIÓN", "MEDIDOR AMARRADO TONEL 1", "MEDIDORES DIRECTOS T#1Y T#2", "NO SE ESTAN GENERANDO LOS SELLOS DEL TONEL 2", "SE RETIRO EL MATACHISPAS, SIN REMACHES", "SEGURO DE LA TAPA DEL GENERADOR DE SELLOS ROTO", "SOPORTE DE SUJECIÓN POSTENFRIADOR DAÑADO", "TAPÓN DE TANQUE AUTOCONSUMO DAÑADO"], "Polea compresor": ["POLEA DE COMPRESOR SUELTA"]}, "Motor": {"Aceite y lubricación": ["* NIVEL BAJO DE ACEITE DE MOTOR", "**FUGA DE ACEITE EN TAPA DE MAZA P2", "BAJO NIVEL DE ACEITE DE MOTOR", "BAJO NIVEL DE ACEITE UNIDAD EN LA TAD 06-01-26, CABLE HELICOIDAL DAÑADO REQUIERE CAMBIO", "FUGA DE ACEITE", "FUGA DE ACEITE DISTRIBICION", "FUGA DE ACEITE EN MOTOR (REPARACIÓN DE MOTOR PREVIAMENTE ENTREGADO 6 MAYO)", "FUGA DE ACEITE EN TAPA DE MASA DELANTERA", "FUGA DE ACEITE MOTOR", "FUGA DE ACEITE POR SELLO DE LA CABEZA TRASERO", "FUGA DE ACEITE POR TAPA DE MASA TONEL", "FUGA DE ACEITE POR TAPÓN DE DIFERENCIAL (4-03-2026)", "REVISAR FUGA ACEITE MOTOR, APRETAR TORNILLOS SOPORTE DE MOTOR"], "Arranque / Baterías": ["FALLA EN MARCHA", "FILTRACION DE AGUA EN CABINA", "LUZ DE ESTROBO NO ENCIENDE", "ROMBOS DAÑADOS", "SEGURO DE COFRE"], "Combustible": ["**TUERCA DE TORNILLO DE SUJECION GANCHO TANQUE DEL DIESEL**", "CONTAMINACIÓN DE UREA EN FILTRO DE COMBUSTIBLE", "FALLA EN MOTOR , UREA EN COMBUSTIBLE", "FUGA DE COMBUSTIBLEEN CONEXIÓN DE BOMBA", "MP VENCIDO CON GARANTÍA Y SENSOR DE NIVEL DE COMBUSTIBLE DAÑADO"], "Escape / Postratamiento básico": ["DAÑO EN DEFLECTOR DE ESCAPE", "MALLA TERMICA DE ESCAPE", "MATACHISPAS NO CUENTA CON PUNTA DE ESCAPE", "PUNTA DE ESCAPE FALTANTE"], "Mantenimiento preventivo": ["/MANTENIMIENTO PREVENTIVO", "CAMBIO DE BUJES PIVOTE, CALIBRACIÓN DE MOTOR, PREVENTIVO", "CÁMARA DE REVERSA SIN SEÑAL", "DAÑO EN BANDERINES", "DESGASTE EN VOLANTE", "MANRENIMIENTO PREVENTIVO VENCIDO (SE AGENDA DESPUÉS DE SALIR PMX20533)", "MANTENIMENTO PREVENTIVO VENCIDO Y CORRECTIVO.PRESENTA PROBLEMAS PARA ENCENDER UNIDAD", "MANTENIMIETO PREVENTIVO VENCIDO", "MANTENIMINETO PREVENTIVO A MOTOR / TONEL / TRAFFILOG", "MANTENUMIENTO PREVENTIVO", "MOBON CAÍDO", "MTO.PREVENTIVO VENCIDO", "MTTO PREVENTIVO", "OXIDO EN PORTA PLACA", "PREVENTIVO A MOTOR", "PREVENTIVO RECHINIDO DE BALATAS.**", "REVISIÓN COMPLETA DE SUSPENSIÓN", "SE RECIBE EL REPORTE DE LA TERMINAL QUE LA UNIDAD DEJA DE ACELERAR EN RUTA QUE LA FALLA ES INTERMITENTE LA UNIDAD ESTA EN TRÁNSITO A LA ESTACIÓN DE SERVICIO", "SERVICIOS A SISTEMA A/C", "SERVICO PREVENTIVO", "SIN MATACHISPAS", "VINIL DE TONEL CON DAÑO"], "Otros - Motor": ["(BANDERINES DAÑADOS, PROBLEMAS EN LUCES, SIN REFACCION)", "** GOLPE EN FACIA DELANTERA CENTRAL Y NEBLINERO PENDIENTE INGRESO A REPARAR**", "**DESGASTE IRREGULAR EN QUINTA RUEDA", "**PORTA DOCUMENTOS DESOLDADO", "**VISERA EN MAL ESTADO**", "*AMORTIGUADOR DE ASIENTO NO TRABAJA", "*BOTON DE LLAMADAS NO FUNCIONA(REPORTADO EL 20/05)", "*FUGA DE AIRE EN ASIENTO (SE BAJA)", "*SEGURO DE CINTURON NO TRABA", "*TOPE INFERIOR DE GOMA DE ASIENTO ROTA", "*TUBO RECUPERADOR DE VAPORES SUELTO", "4 CARTELES ROTOS Y DESGASTADOS", "4 ROMBOS DESGASTADOS Y ROTOS", "A/C NO ENFRÍA", "AIRE ACONDICIONADO NO ENFRIA CORRECTAMENTE", "AJUSTE DE FRENOS", "AJUSTE EMBRAGUE", "ALERO DE AIRE DE CABINA NO TRAE", "AMORITGUADORES DELANTEROS HUMEDOS", "AMORTIGUADORES CHORREADOS", "AMORTIGUADORES DE CABINA VENCIDOS", "AMORTIGUADORES DE TONEL VENCIDOS 2DO EJE", "AMORTIGUADORES DELANTEROS DAÑADOS", "BAJA POTENCIA DE MOTOR (SE ATENDIÓ 22/04)", "BANDERINES DAÑADOS", "BASE DE CUERNO DE COFRE NO TRAE", "BASE DE ESCALERA DE TONEL FRACTURADA", "BASE DE ESPEJO", "BASE DE HIDRAULICO DESOLDADO", "BASE DE NEBLINERO ROTO", "BASE DE PANTALLAS SUELTOS", "BASE ROTA DE IMAN DE COMPARTIMENTO 2", "BISERA LADO CHOFER DAÑADA", "BOTON DE CONTROL DE MANDO ROTA", "BOTONERA CONTROL DE VIDRIOS DAÑADA", "BOTONERA DAÑADA DE VIDRIOS", "BOTONERA DE AJUSTE DE ESPEJOS LATERAS DAÑADO", "BOTONERA DE CRISTALES LADO OPERADOR DAÑADA", "BOTONERA DE ELEVADOR DAÑADO", "BOTONERA DEL CONTROL CRUCERO DAÑADA", "BOTONERA DERECHA DE VIDRIOS DAÑADA", "BOTONERA LADO PILOTO DAÑADA", "BOTÓN DE ELEVAR CRISTALES QUEBRADO POR USO", "BUJES DE AMORTIGUADORES TRASEROS DAÑADOS", "CAJA DE VALVULAS DAÑADA", "CAJA DE VÁLVULAS DAÑADA", "CALIBRACION DE FRENOS, REQUIERE 2 MATRACAS DELANTERAS", "CALIBRACIÓN DE VÁLVULAS MOTOR", "CALIBRACIÓN VÁLVULAR REQUERIDA", "CALIBRACIÓN VÁLVULAS DE MOTOR", "CALZA ROTA", "CAMARA DE REVERSA", "CAMARA DE REVERSA NO FUNCIONA", "CERROJO DE PUERTA SELLO ELECTRÓNICO ROTO", "CINCHO DE SUJECIÓN TAPA PRECINTANK DAÑADO", "COMPRESOR DE A", "COMPRESOR DEL CLIMA DAÑADO", "CONTROLES DE PUERTA DERECHA NO FUNCIONAN", "CRISTA PARABRISAS DAÑADO POR SINIESTRO", "CÁMARA DE REVERSA \"DAÑADA\" (SE MIRA BORROSO)", "DAÑO BANDERIN DELANTERO", "DAÑO EN ARNES DE CÁMARA 5", "DAÑO EN BOTONERA DE ELEVADORES LADO PILOTO", "DAÑO EN ESCALERA (REPORTADO POR SINIESTRO)", "DAÑO EN VISERA LADO PILOTO", "DAÑO FOCO PORTA PLACA", "DAÑO INTERNO EN VALVULAS BETTS AMBOS COMPARTIMENTOS", "DAÑO TAPICERIA ASIENTO", "DESGASTE EN LLANTAS TRASERAS", "DESGASTE EN VOLANTE", "DIRECCION DURA", "EN AGENCIA PARA VERIFICACIÓN DE ECM", "ENGRANES DAÑADO DEL MEDIDOR 2", "ESCALERA DAÑADA", "ESPEJO LADO DERECHO FALTANTE", "ESPEJO RETROVISOR VIBRA DEMASIADO", "ESPEJO VANQUETERO ROTO ()", "ESTRIBO, CARCASA LADO PILOTO CON TALLONES", "FALLA EN CÁMARA DE REVERSA", "FALLA EN FRENO DE MOTOR / MP", "FALLA EN IMPRESORA Y MARCA ERROR EN PANTALLA TCS3000", "FALLA EN MOTOR", "FALLA EN PANTALLAS Y TECLADOS TCS3000 T#1 Y #2", "FALLA EN SELLO ELECTRÓNICO, PLACA DE TAPÍN DE COMPARTIMENTO 1 ROTA", "FALLA EN SELLO ELECTRÓNICO, PLACA DE TAPÍN DE COMPARTIMENTO 2 ROTA", "FALLA EN SELLO ELECTRÓNICO, TAPÍN DE COMPARTIMENTO 1 FALTA IMÁN", "FALLA INTERMITENTE EN FRENO DE MOTOR", "FALLAS ADMIN: AMORTIGUADORES DELANTEROS Y TRASEROS DAÑADOS", "FALTA POLIN CORTO", "FILTRO DE CAJA DE VALVULAS DIRECTO", "FILTRO REGULADOR DAÑADO", "FISURA EN BASE DE FENDER LADO IZQ", "FISURA POLIN DE CARGA", "FOCO TRASERO DE PLACA DAÑADO", "FUGA DE AIRE EN CAJA PLC", "FUGA DE AIRE POR ABAJO DE CABINA", "FUGA DE AIRE POR CAJA NEGRA", "FUGA DE AIRE POR CAJA PLC (9-01-26)", "FUGA DE AIRE TAPÓN TANQUE AUTOCONSUMO DAÑADO", "FUGA DE PRODUCTO EN LA CARGA, SE ENCUENTRA VALVULA API CON GOLPE", "FUGA PRODUCTO POR DOMO (DAÑO EN SONDA MADISON, TAPON TEMPORAL)", "FUNDA TÉRMICA DAÑADA", "FUNDA TÉRMICA DAÑADA (7-01-26)", "GOLPE EN ESCALÓN LADO COPILOTO", "GOLPE EN ESPEJO LATERAL DERECHO", "GOLPE EN FACIA", "GOLPE EN FALDO DELANTERO", "GOMAS Y BASE DE COFRE", "GRIETAS EN SOPORTE TONEL (CUERNO)", "JUEGO PERNOS DE DIRECCION, BRAZO VIAJERO Y BALEROS DE RUEDA", "LA UNDIAD SE ENCUENTRA DESCARGANDO EN LA E.S", "LIGA RECUPERADORA DE VAPORES", "MANOMETRO DAÑADO", "MANOMETRO DE C1 EN MAL ESTADO", "MANOMETROS VALVULAS INTERLOCK CON GLICERINA CONTAMINADA EN AMBOS COMPARTIMENTOS", "MATACHISPAS DESOLDADO", "MATACHISPAS DESPRENDIDO (EXCESO DE OXIDO)", "MATRACAS DAÑADA", "MATRACAS TRASERAS SIN AJUSTE", "MEDIDOR CUENTA LITROS C-1 DAÑADO", "MEDIDOR CUENTA LITROS DIRECTO TONEL 1", "MEDIDORES CUENTA LITROS SIN INTERNOS (5-01-26)", "MEDIDORES DIRECTOS T#1 Y T#2", "MEDIDORES DIRECTOS T#1 Y T#2. (8-01-26)", "MICA DE FOCO ROTA", "MP A MOTOR CON GARANTÍA Y CAMBIO DE BALATAS", "MP A MOTOR CON GARANTÍA Y CAMBIO DE BALATAS. PISO DE PILOTO DESGASTADO Y ASIENTO ROTO, FUGA DE AIRE EN VÁLVULA DE PLATINA, MANGUERAS DE RECUPERACIÓN DE VAPORES EN LOS DOMOS CON FUGA (POROSAS). BARANDAL IZQUIERDO DE ESCALERA DOBLADO (SIN ODA)", "MP VENCIDO", "MP VENCIDO (AGENDADO PARA EL 13 DE MAYO)", "NEUMATICO DE EXTRA CON PERTUBERANCIA NO ES POSIBLE REPARAR", "NO CUENTA CON MANIVELA DE LEVANTE, DAÑO OPERATIVO", "PANTALLA TCS FALLANDO", "PENDIENTE AUTORIZACIÓN", "PENDIENTE SUSTITUCION DE PLAFON AMBER DE TONEL", "PERDIDA POTENCIA , TESTIGO DE REDUCCION DE TORCION ACTIVADO", "PERNO DE PALANCA VÁLVULA API", "PLAFON FUNDIDO AMBAR", "PLUMAS LIMPIAPARABRISAS FALLA ADMINISTRADAS: 4 AMORTIGUADORES EN EJE 2 Y 3", "POLIN DE CARGA PODRIDO", "POLIN DERECHO FRACTURADO.**", "PORO EN TONEL PARTE TRASERA", "PUERTA DE PILOTO NO ABRE, CHICOTE ROTO", "REEMPLAZO DE BALATAS", "REPARACIÓN DE CAJA DE DIRECCIÓN", "ROMBOS DAÑADOS", "RUIDO EN TRANSMISIÓN EN CAMBIOS 8 Y 9", "RUIDO Y VIBRACIÓN EN MOTOR", "SE RETIRAN CUENTA LITROS 02-OCT-2025", "SEGURO DE GOMA DE TAPA DE SELLO ELECTRÓNICO DAÑADO", "SIN PAPELERA EN CABINA", "SINIESTRO:GOLPE EN DEFENSA DELANTERA", "SINIESTRO:GOLPE FRONTAL (DAÑO DEFENSA DELANTERA, MOLDURA DEFENSA Y FACIA)", "SOPORTE DE COFRE LADO DERECHO DAÑADO**", "SUSPENSIÓN DE CABINA GOLPETEA Y TUENA MUCHO", "TAPA DE SELLO ELECTRONICO ROTO", "TAPÓN TANQUE AUTOCONSUMO DAÑADO", "TARDA EN ACTIVAR FRENO DE MOTOR", "TECLADO NO RESPONE EN AMBOS TONELES", "TESTIGO ACTIVO EN TABLERO", "TORNILLO DE PALANCA API QUEBRADO", "TORNILLOS DE PERCHA FLOJOS", "TRÁMITE ADMINISTRATIVO", "TUBO DE VAPORES SUELTO", "VALVULA INTERLOCK DE COMPARTIMENTO 2 NO CUENTA CON PERILLA", "VINILES DESGASTADOS", "VISERA CONDUCTOR DAÑADA", "VISERA DAÑADA LADO PILOTO", "VISERA LADO OPERADOR DAÑADA", "VISITA DE TÉCNICO ASE A CRA", "VÁLVULA BETS NO FUNCIONA"], "Pérdida de potencia / Códigos": ["AMORTIGUADORES", "CODIGO ABS", "CODIGO DE MOTOR Y PERDIDA DE POTENCIA", "CODIGOS EN TABLERO ACTIVOS", "CÓDIGO ACTIVO DE MOTOR", "CÓDIGO ACTIVO DE MOTOR, ERROR SCR REDUCCIÓN DE TORSION", "CÓDIGO ACTIVO MOTOR", "CÓDIGOS DE TABLERO ACTIVOS", "ERROR DE TORSIÓN SCR", "MANÓMETROS DAÑADOS", "PERDIDA DE POTENCIA SISTEMA TRAFFILOG", "PÉRDIDA DE POTENCIA", "PÉRDIDA DE POTENCIA LA UNIDAD NO SE PUEDE TRASLADAR", "REDUCCION DE TORSION DEL 20 %, TESTIGO DE FALLA SPN 3216 FMI 2, SPN 3217 FMI 20, 3936 FMI 2", "TESTIGO ENCENDIÓ DE SERVICIO DPF REQUERIDO (DETENER VEHÍCULO)", "TORNILLO DE PALANCA DE VALVULA DE DESCARGA T 1", "UNIDAD NO ACELERA, UNIDAD EN CONSUMO DE UREA ESTORBANDO"], "Refrigeración / Anticongelante": ["BAJO NIVEL DE ANTICONGELANTE", "FUGA DE ANTICONGELANTE POR BOMBA", "FUGA DE REFRIGERANTE", "MANGUERA DE VAPORES ROTA"], "Turbo / Admisión": ["CODO DEL TURBO DAÑADO", "HOLLÍN EN TURBO", "TURBO SE ESCUCHA QUE SILBA"], "UREA": ["FUGA POR DEPOSITO DE UREA"]}, "Quinta Rueda": {"Engrasado": ["ENGRASADO DE LA QUINTA Y ENGRASADO EN GENERAL, CAMBIO DE PLUMILLAS LIMPIA PARABRISAS Y RELLENO DE LIQUIDO LIMPIA PARABRISAS. CAMBIO DE ROMBOS 10 PIEZAS"], "Juego / Perno rey": ["/FALLA ADMINISTRADA: JUEGO EN 5TA RUEDA", "QUINTA RUEDA Y PLANCHA DE PERNO REY DAÑADOS"], "Otros - Quinta Rueda": ["FUGA DE AIRE EN VALVULA AL PISAR EL PEDAL DE FRENO", "SOPORTE DE FENDER SE ROMPIO"]}, "Rescate Carretero": {"Filtro / Bobina": ["BOBINA DIESEL DAÑADA", "FILTRO DE PARTÍCULAS"], "Otros - Rescate": ["TRÁMITE ADMINISTRATIVO"]}, "Sistema Eléctrico Motriz": {"ABS / Sensores velocidad": ["CÓDIGO DE FALLA ABS. OS: 270-224383-78208 NO.PEDIDO 15052026PRTUIMOR", "CÓDIGO DE FALLA SENSOR ABS", "CÓDIGOS ABS EN TABLERO", "PÉRDIDA DE POTENCIA POR FALLA EN SENSOR DE VELOCIDAD (REQUIERE ACTUALIZACIÓN SOFTWARE)", "TESTIGOS ABS ACTIVOS (FALLA ADMINISTRADA)"], "Acelerador / Potencia": ["NO ACELERA (FALLA EN PEDAL DE ACELERADOR)", "PERDIDA DE POTENCIA", "PIERDE POTENCIA", "TACÓN DE PERCHAS DE TONEL CON GRIETAS (4 PZAS.), SOPORTE DE TUBO RECUPERADOR DE VAPORES (SE LE CAYÓ), CONECTOR DE IMPRESORA DESARMADO, GRANADAS DE TENSORES DAÑADOS, PERDIDA DE POTENCIA ( MULTIPLE DE ESCAPE), UNIDAD NO ARRANVA (DMAS, FORRO DE ASIENTO DESCOSTURADO", "TESTIGO FALLA COM"], "Baterías": ["BAJO VOLTAJE EN BATERÍAS", "BATERÍAS BAJAS", "BATERÍAS DESCARGADAS", "FUGA DE ACEITE DE DIRECCIÓN HIDRÁULICA, UNIDAD NO DEJA DE HACER LLAMADAS DE EMERGENCIA. BATERIAS DAÑADAS", "REEMPLAZO DE BATERÍAS DE ARRANQUE, NO RETIENEN CARGA", "UNIDAD NO ENCIENDE (BATERIAS BAJAS)"], "Iluminación unidad": ["CUARTOS DE TONEL NO ENCIENDEN", "DAÑO PLAFON 4\"TONEL", "FALTA ANTICONGELANTE", "FARO NEBLINERO IZQUIERDO DAÑADO (SINIESTRO)", "FOCO NEBLINERO FUNDIDO", "FUGA DE AIRE POR COMPRESOR CUBRE ESCAPE DAÑADO", "LUCES DE GALIBO FUNDIDAS", "LUZ DE REVERSA DERECHA FUNDIDO", "LUZ ESTROBO NO ENCIENDE", "LUZ PRICIPAL FUNDIDA LADO CHOFER", "LUZ PRICIPAL FUNDIDA LADO COPILOTO", "LUZ PRINCIPAL FUNDIDA IZQ", "LUZ PRINCIPAL FUNDIDA LADO CHOFER", "PLAFON DE REVERSA", "PLAFONES DE REVERSA FUNDIDOS", "REQUIERE REEMPLAZO DE FOCO H4"], "Otros - Eléctrico": ["A/C NO FUNCIONA", "AMORTIGUADORES VENCIDOS 3ER EJE (5/03/26)", "BISEL DELANTERO DERECHO DAÑADO", "BOTON DE CONTROL DE MANDO ROTA", "BOTON DE PANICO DAÑADO", "BOTONERA CONTROL DE VIDRIOS DAÑADA", "BOTONERA DE VIDRIOS DAÑADA", "BOTONERA ELEVADORES DE VIDRIOS DAÑADA", "BOTÓN DE LUCES INTERMITENTES SIN FUNCIONAR", "BOTÓN DE MEMBRANA DE LLAMADA DE EMERGENCIA NO FUNCIONA (6-3-26)", "CANASTILLA DEL DOMO ADENTRO DEL TANQUE", "CLIMA NO ENFRÍA (FALLA ADMINISTRADA )", "CODIGOS DE MOTOR (SA:0 SPN:100 FMI:1 OC:2)", "CÓDIGO DE FALLA DE MOTOR", "CÓDIGOS DE FALLA", "DAÑO EN BANDERINES", "DAÑO EN BOTONES DE DMAS", "DAÑO EN PORTAROMBO Y ROMBOS TONEL", "DAÑO EN PORTAROMBOS DE TONEL (4)", "DAÑO EN ROMBOS DE TONEL (4)", "DAÑO PORTAROMBOS Y ROMBOS DE TONEL", "DAÑO RECUBRIMIENTO CABLE DE REVERSA", "DEFENSA TRASERA ROTA (SIN REPORTE SINIESTRO, 14-05-26)", "DEPOSITO DE ACEITE DE DIRECCIÓN FUGANDO (3-03-26)", "DESGASTE EN VOLANTE", "EMPAQUE DE DOMO ROTO", "ESPEJO LADO DERECHO ROTO", "ESPEJO RETROVISOR DAÑADO", "FALLA DE COM", "FALLA ELÉCTRICA (ATENDIDA)", "FALLA EN IMPRESORA", "FALLA EN IMPRESORA (7-25)", "FALLA EN MARCHA, SE QUEDA PEGADA", "FALTA DE ROMBOS EN UNIDAD", "FARO DE NIEBLA FUNDIDO TUBO Y ABRAZADERA DE TURBO ROTOS", "FUGA ACEITE EN TAPA DE MAZA DE TONEL", "FUGA ACEITE TAPA DE MAZA DELANTERA", "FUGA DE AIRE EN PLC", "FUGA DE AIRE EN VALVULA RECUPERADORA DE VAPORES", "FUGA DE AIRE POR VÁLVULA DE TANQUES AIRE", "FUGA DE UREA POR ESCAPE", "FUGA UREA JUNTA ESCAPE", "GOLPE EN FACIA", "GOLPE EN TANQUE DE UREA POR CAIDA EN ALCANTARILLA", "GUARDA BARROS IZQUIERDO SUELTO (5/03/26)", "JUEGO PERNOS DE DIRECCION, BRAZO VIAJERO Y BALEROS DE RUEDA", "LLANTA POSICION1 RAJADA", "LUCES TRASERAS NO ENCIENDEN", "LUCES TRASERAS SE APAGAN (13-2-26)", "MATACHISPAS FLOJO, BASE DAÑADA (3-02-26)", "MEBRANA DE LLAMADA (12/9/2025) MEDIDOR DIRECTO T#1", "MEDIDOR DIRECTO T#1 (4-03-25)", "MEDIDOR T#2 TRABAJANDO CON RUIDO (01-26)", "MEDIDOR T1 LIBRE", "NI ARRANCA EN ENTRADA DE LA TAD , MARCA 12.1V", "NO CUENTA CON LLANTA DE REFACCIÓN", "NO DA PERMISIVO C2", "NO LE PERMITE EL ARRANQUE DE LA UNIDAD", "NO POSICIONA", "OXIDACIÓN EN SOLDADURA DE TONEL (PROBABILIDAD DE PORO)", "PERCHERO ROTO DAÑO OPERATIVO", "PLUMILLAS LIMPIAPARABRISAS", "PRESENTA ÓXIDO EN DIFERENTES ÁREAS DE TONEL", "REINCIDENCIA DE FUGA DE PRODUCTO POR TONEL", "REINCIDENCIA TESTIGO ACTIVO \"SERVICIO DPF REQUERIDO\"", "REPOSICIÓN FALTANTE TAPÓN TANQUE DE AUTOCONSUMO", "ROMBOS DAÑADOS", "SE CAYÓ LAMPARA PARA PLACA (NO PRESENTA GOLPE), TAPONES DE AUTO CONSUMO DAÑADOS., 04/10/2023", "SIROCO QUEBRADO, EN ESPERA DE REFACCIÓN", "SUJECCIÓN DE LODERA IZQUIERDA FISURADA", "TAPON DE AUTOCONSUMO DAÑADO", "TAPONES DE AUTOCONSUMO DAÑADO / SIN LUCES ALTAS NI BAJAS / FALLA EN A/C / FALTA BOTON INTERLOCK / PLUMAS LIMPIAPARABRISAS / TAMBORES EJE DE DIRECCIÓN TRACTO / AMORTIGUADORES EJE TRACERO TRACTOR 5 Y 6 / SELLO DE VITON 10\" ESCOTILLA", "TESTIGO ACTIVO \"ERROR DE TORSIÓN AL %25\"", "TESTIGO ACTIVO, SENSOR DE OXIGENO", "TESTIGO ENCENDIDO (INTERMITENTE)", "TORNILLO DE PERCHA DE TONEL CAPADO", "VESTIDURA DE ASIENTO ROTA", "VIDRIO PARABRISAS ESTRELLADO", "VISERA LADO CHOFER ROTA DAÑO OPERATIVO", "VISERA ROTA DAÑO OPERATIVO", "VISERA ROTA LADO CHOFER DAÑO OPERATIVO"], "Velocímetro / Tablero": ["CÓDIGOS DE FALLA EN TABLERO, PÉRDIDA DE POTENCIA", "FALLA DE COMUNICACIÓN Y ALERTAS EN TABLERO", "NO MARCA VELOCIMETRO", "PÉRDIDA DE COMUNICACIÓN EN TABLERO", "PÉRDIDA DE POTENCIA, PRESENTA CÓDIGOS DE FALLA EN TABLERO", "TESTIGO ENCENDIDO EN TABLERO"]}, "Sistema de Aire": {"Compresor neumático": ["COMPRESOR DE AIRE", "COMPRESOR SISTEMA NEUMÁTICO DAÑADO", "SISTEMA NEUMÁTICO NO CARGA AIRE"], "Freno de estacionamiento": ["NO FUNCIONA FRENO DE ESTACIONAMIENTO"], "Fuga de aire": ["DAÑO EN SOLDADURA DE ABRAZADERA TIPO U DE CONDUCTO DL SEGUNDO COMPARTIMIENTO", "ESPONJA DE ASIENTO EN MAL ESTADO", "FALTA DE TORNILLERÍA EN ESCALÓN SUPERIOR DE DEFENSA TRASERA", "FALTA TORNILLO EN SOPORTE DE TONEL", "FUGA DE AIRE AL CARGAR", "FUGA DE AIRE DEBAJO DE CABINA", "FUGA DE AIRE EN BASE DEL FAN", "FUGA DE AIRE EN CAJA PLC", "FUGA DE AIRE EN DEPÓSITO DE UREA", "FUGA DE AIRE EN MANGUERAS DE APERTURA DE VÁLVULAS BETTS", "FUGA DE AIRE EN SOLENOIDES", "MALLA CUBRE ESCAPE DAÑADA", "MANDO SUELTO CONTROL CRUCERO", "OXIDO EN PORTA PLACA", "REVISIÓN COMPLETA DE SUSPENSIÓN", "TORNILLO CAPADO EN CAMA DE TONEL"], "Manguera espiral": ["CONECTOR RÁPIDO DE MANGUERA DE AIRE ROTA", "MANGUERA ESPIRAL DAÑADA", "REEMPLAZO DE MANGUERA DE ESPIRAL", "RELLENO DE REFRIGERANTE"], "Otros - Sistema de Aire": ["A/C NO ENFRÍA", "AMORTIGUADORES 3ER EJE VENCIDOS", "AMORTIGUADORES EN MAL ESTADO", "BAJA PRESIÓN DE AIRE POSIBLE FUGA", "BOLSA DE AIRE DEL ASIENTO CHECAR", "BOTON DE CONTROL DE MANDO ROTO", "BOTONERA DE CRISTALES LADO OPERADOR DAÑADA", "BOTÓN DE PARO DE EMERGENCIA DAÑADO", "CRISTAL PARABRISAS ESTRELLADO", "DAÑO EN BANDERIN TRASERO", "DAÑO EN ROMBOS DE IDENTIFICACIÓN DE TONEL", "FALLA EN SENSOR DE TEMPERATURA DE CUENTALITROS COMPARTIMENTO 2", "FALLA EN SISTEMA A/C", "FALLA INTERMITENTEMENTE DE PERMISIVO", "FALLA NIVELADORA DE AIRE EN ENER", "FALSO CONTACTO EN CAMARA DE REVERSA (NO HAY IMAGEN)", "FISURA EN BARANDAL LADO DER. DE ESCALERA", "FUGA AIRE EN PARTE BAJA TONEL", "FUGA POR BOLSA DE SUSPENSION 2DO EJE IZQUIERDO", "IMAN DEL TAPIN DEL DOMO NO TRAE", "MALLA TERMICA DE ESCAPE ROTA", "NO FUNCIONA IMPRESONA Y NO CONECTA CON PLC", "NO FUNCIONA SISTEMA A/C", "NO MARCA COMBUSTIBLE", "PEDAL DEL FRENO HASTA ABAJO(ECXESO DE JUEGO LIBRE DEL PEDAL)", "SINIESTYRO:GOLPE EN PARTE TRASERA TONEL"], "Secador de aire": ["REEMPLAZO DE SECADOR"], "Válvulas / Solenoides": ["MANOMETROS VALVULAS INTERLOCK CON GLICERINA CONTAMINADA EN AMBOS COMPARTIMENTOS"]}, "Sistema de Enfriamiento": {"Fan Clutch": ["FAN CLUTCH ACTIVADO, CÓDIGO ACTIVO SPM171 FMI13 (SE LIBERÓ 16 FEB A PRUEBA, EN ESPERA DE REINCIDENCIA FALLA)"], "Fuga de refrigerante": ["FUGA DE AIRE EN CONEXIÓN DE GOBERNADOR", "FUGA DE ANTICONGELANTE", "FUGA DE REFRIGERANTE EN CONEXIÓN DE COMPRESOR", "FUGA DE REFRIGERANTE EN LÍNEAS DE COMPRESOR NEUMÁTICO", "MANGUERA PRIMARIA DEL RADIADOR DAÑADA (ROTA) FUGA REFERIGERANTE", "SENSOR DE REFRIGERANTE DAÑADO. BAJO NIVEL DE REFRIGERANTE"], "Otros - Enfriamiento": ["AMORTIGUADORES TRASEROS DAÑADOS", "FUNDA TÉRMICA DAÑADA", "MEDIDOR DIRECTO T #2 (7-01-26)", "SOPORTE DE SUJECIÓN DE POST ENFRIADOR DAÑADO", "TAPÓN DE TANQUE AUTOCONSUMO DAÑADO (6-01-26)"], "Sensor temperatura": ["SENSOR DE TEMPERATURA DAÑADO. RESTRINGE POTENCIA"]}, "Sistema de Llenado por el Fondo": {"Caja de válvulas": ["BOLSA DE AIRE DAÑADA", "BOTONERA DE VIDRIOS DAÑADA", "CAJA DE VALVULAS CON FISURAS, TUBO DE SONDA MADISON QUEBRADAS LOS 2 COMPARTIMIENTO, FUGA DE AIRE EN CAJA DE PLC, EN UNIDAD DE MANTTO REQUIERE REEMPLAZO, VISERA DAÑADO (CARTÓN DOBLADO), LUZ DE PORTA PLACA NO ENCIENDE, BOTIQUIN CADUCADO, CAJA DE VALVULAS CON FISURAS", "CAJA DE VALVULAS FISURADA", "EMPAQUE DE VITON DAÑADO FUGA DE PRODUCTO EN CAJA DE VALVULAS, SOPORTE Y AMORTIGUADORES DE CABINA", "FALLAS ADMINITRADAS: FILTRO REGULADOR DE AIRE CAJA DE VÁLVULAS DAÑADO (BYPASS)", "FUGA DE AIRE EN CAJA DE VALVULAS", "FUGA DE AIRE EN FILTRO LUBRICADOR DE CAJA DE VALVULAS", "FUGA DE AIRE EN FILTRO SEPARADOR DE CAJA DE VALVULAS", "FUGA DE AIRE EN FLT T#2 CAJA DE VÁLVULAS (5-01-26)", "FUGA DE AIRE FILTRO LUBRICADOR DE CAJA DE VALVULAS QUEBRADO", "FUGA DE AIRE POR FILTRO FRL EN CAJA DE VÁLVULAS (EN ESPERA DE ENVÍO REFACCIÓN)", "MANOMETROS DE CAJA DE VALVULAS DAÑADOS", "PALANCA DE CAJA DE VALVULAS SUELTA", "PERNO DE MANIJA DE CAJA DE VALVULAS DESOLDADO", "VÁLVULA CHECK CAJA DE VÁLVULAS , DAÑADA (FALLA ADMINISTRADA)"], "Canastilla": ["CANASTILLA CAÍDA EN TANQUE Y SEGURO DOMO NO CIERRA BIEN", "CANASTILLA DESPRENDIDA", "CANASTILLA DESPRENDIDA (4-07-24)", "CANASTILLA DESPRENDIDA COMP. 2"], "Filtro regulador / FESTO": ["FILTRO FESTO EN CAJA DE VÁLVULA DAÑADO"], "Fuga de aire": ["FUGA DE AIRE (15-4-26)", "FUGA DE AIRE AL CARGAR PRODUCTO, PÉRDIDA DE PRESIÓN NEUMÁTICA EN SISTEMA", "FUGA DE AIRE EN FILTRO LUBRICADOR DE PLC", "FUGA DE AIRE EN MANGUERA DE PRESOSTATO", "FUGA DE AIRE EN VALVULA DE PARO DE EMERGENCIA", "FUGA DE AIRE POR CONEXIÓN DE BOMBA DE UREA", "FUGA DE AIRE POR ELECTROVÁLVULA"], "Fuga de producto": ["FUGA DE PRODUCTO AL PARECER POR SENSOR DEL TONEL", "FUGA DE PRODUCTO EN BRIDA C2", "FUGA DE PRODUCTO EN DOMO", "FUGA DE PRODUCTO POR BRIDA DE CUENTA LITROS EN TONEL 1", "FUGA DE PRODUCTO VALVULA PRESION Y VACIO", "PORO EN EL TONEL CON FUGA DE PRODUCTO"], "Manguera de vapores": ["BASE DE AMORTIGUADOR DAÑADA", "BOTON DE PANICO DAÑADO", "DAÑO EN ROMBOS", "FUGA DE PRODUCTO POR TUBERÍA RECUPERADORA DE VAPORES", "MANGUERA DE VAPORES", "MANGUERA DE VAPORES DAÑADA", "MANGUERA DE VAPORES DAÑADAS", "MANGUERA DE VAPORES ROTA", "MANGUERAS DE VAPORES DAÑADAS", "POLÍN CORTO DAÑADO", "ROMBOS DAÑADOS", "ROMBOS EN MAL ESTADO", "TOMA RECUPERADORA DE VAPORES EMBOLO SUELTO", "TORNILLO CAPADO EN CANASTILLA DE REFACCIÓN DE LLANTA", "TUBO DE VAPORES SUELTO"], "Manómetros / Mirillas": ["MANOMETROS / MEMBRANA DE LLAMADA /", "MANÓMETRO DE TONEL 2 NO FUNCIONA , NO CUENTA CON BANDERÍN DELANTERO IZQUIERDO", "MANÓMETROS DAÑADOS", "MIRILLA COMP.2 DAÑADA", "MIRILLA FISURADA COMPARTIMIENTO 2"], "Otros - Llenado": ["*FALTA BANDEROLAS DELANTERA LADO DERECHO , COLOCAR MATACHISPAS", "4 PORTA ROMBOS DAÑADOS", "6 ROMBOS DAÑADOS", "ABRAZADERA DE CATALIZADOR ROTA", "ACEITE PARA MAZA EJES TRASEROS TONEL", "AMORTIGUADOR CHORREADO LADO COPILOTO", "AMORTIGUADOR TRASERO DAÑADO", "AMORTIGUADORES CHORREADOS", "AMORTIGUADORES EJES DE TONEL 2,3,4", "BAJO FLUJO EN DESCARGA DE PRODUCTO", "BALATAS EJE TRASERO TONEL", "BANDEROLA DE DEFENSA DELANTERA ROTA", "BASE DE COFRE DAÑADA (SE BOTA EL SEGURO DEL COFRE EN RUTA)", "BASE DE PORTA ROMBOS LADO COPILOTO ROTO", "BOTONERA DE CRISTALES DAÑADO", "BOTONERA DE CRISTALES DE VIDRIO CHOFER DAÑADA (1-06-24)", "BOTONERA DE ELEVADOR DE CRISTALES ROTA", "BOTONERA DEL ELEVADOR DE CRISTALES ROTA", "BOTONERA DMMAS BOTON SUMIDO", "BOTÓN DE ELEVADOR VIDRIOS QUEBRADO", "BUJE DE PERNOS DE DOMO", "CABLE DE CAMARA DAÑADO, OXIDO EN TONEL( TORNILLO QUE SUJETA LA REJILLA DEL TONEL)", "CAMARA DE REVRSA", "CAMBIO DE PERNO DE VALVULA DE CARGA Y DESCARGA", "CUENTALITROS AMARRADO COMPARTIMENTO1", "CÓDIGO ACTIVO EN TABLERO SPN 3058 FMI 10", "CÓDIGO ACTIVO SPM 3058 FMI 10 (6-04-26)", "DAÑO EN BOTONERA DE ELEVADORES LADO PILOTO", "FALLA DE MOTOR, FALLA CRITICA DE EMISIONES", "FALLA EN LA BOTOPNERA DE LA PANTALLA TCS 300", "FALLA EN SELLADO ELECTRONICO COMP 2 NO SE REFLEJA", "FALLA EN SISTEMA A/C", "FALTA ENGRASADO GENERAL EN TRACTOR Y TONEL (6-01-26)", "FALTA TORNILLOS DE AMBOS LADOS DE LUCES DE PORTA LODERAS", "FUERA DE ESPECIFICACIÓN PARA EL TRANSPORTE DE TURBOSINA", "FUNDA TERMICA DE ESCAPE ROTA", "INTERMINTENCIA EN TESTIGO DE FRENO DE MOTOR", "LIQ. LIMPIAPARABRISAS", "LLANTA POSICIÓN 16 DAÑO POR OBJETO, SE COLOCA REFACCIÓN", "LODERAS DAÑADAS", "MALLA TÉRMICA DE ESCAPE DAÑADA", "MANCHA DE PRODUCTO EN LOS EMPAQUES DE BRIDA DE C1 Y C2", "MANGUERA DE ESPIRAL DAÑADA", "MANGUERA ESPIRAL DAÑADA", "MANGUERGA DE T DE DOMO / 5 ROMBOS / HELICOIDAL / LODERA / RJUNTA DE R/V CBLE DE 7 VÍAS/ CABLE DE PRECINTANK 25/5/26", "MANTENIMIENTO A VALVULAS, REVSIÓN DE FUGAS, REEMPLAZO DE JUNTAS DE DOMO", "MATACHISPAS SE CAE EN TRAYECTO", "MATRACAS TRASERAS DAÑADAS, NO DAN AJUSTE", "MEDIDOR DIRECTO T#1 (8-01-26)", "MEDIDOR DIRECTO T#2 (6-01-26)", "MEDIDORES DIRECTOS T#1Y T#2", "NO ABRE PUERTA POR MANIJA INTERIOR", "NO GRABA VÍDEO SISTEMA ONCOMAND", "NO SE VE LA CAMARA DE REVERSA", "PLUMAS LIMPIA PARABRISAS", "POLIN DE CARGA LADO CHOFER ROTO", "PORTALODERA TONEL DESOLDADA", "PÉRDIDA DE POTENCIA EN MOTOR Y CÓDIGOS ACTIVOS", "REEMPLAZO DE DISCO DE PARO Y CLUTCH F/O", "REMACHES TIPO HUCK FLOJOS (6-04-26)", "REVISION DE PARO DE SISTEMA TRAFFILOGG", "ROMBOS / SOPORTE TUBERÍA URV", "ROMBOS DAÑADOS", "SALPICADERA ROTA", "SE JALA ALA DERECHA", "SEGUROS DE COFRE", "SINIESTRO: GOLPE EN DEFENSA TRASERA LADO PILOTO", "SOLDADURA ROTA EN FALDON DE TONEL", "SONDA MADISON QUEBRADA", "SOPORTE DE CUENTALITROS C2 FISURADO", "SOPORTE DE FENDER ROTO", "TAPA DE MAZA TONEL ESTRELLADOS", "TAPÓN DE TANQUE AUTOCONSUMO DAÑADO", "TAPÓN DE TANQUE AUTOCONSUMO DAÑADO (6-01-26)", "TAPÓN TANQUE AUTOCONSUMO DAÑADO", "TONEL CARGADO CON PRODUCTO CONTAMINADO PENDIENTE DE DESCARGA POR PEMEX", "TORNILLOS DE PERCHAS DE TONEL FLOJOS", "TUBO DE SOPORTE DE FRENDER DE TRACTO FRACTURADO", "VICEL DOBLADO DAÑO OPERATIVO"], "Sello electrónico": ["BANDERINES DAÑADOS", "BASE DE IMAN DE CAJA DE VALVULAS SE DESOLDO", "EMPAQUE DE TAPIN ROTO", "EMPAQUE DEL TAPIN ROTO", "FALLA EN SELLO ELECTRONICO, PLACA DE TAPIN COMPARTIMENTO 1 ROTA", "FALLA EN SELLO ELECTRÓNICO, PLACA DE TAPÍN DE COMPARTIMENTO 1 ROTA", "FALLA EN SELLO ELECTRÓNICO, REVISIÓN DE SENSOR DE COMPARTIMENTO 2", "FALLA MICROFONO DE CABINA", "FALLA SELLO ELECTRONICO", "FUGA DE PRODUCTO EN EMPAQUES DE TAPIN DE DOMOS (GTIA)", "FUGA DE PRODUCTO EN LOS TAPINES DEL DOMO", "NO FUNCIONA SELLO ELECTRÓNICO, FALTANTE IMÁN DE DOMO TONEL 1", "NO TIENE EL TORNILLO DEL TAPIN", "SOPORTE DE TUBERIA RV FRACTURADO"], "Sensor de sobrellenado": ["FALLA EN SENSOR DE SOBRELLENADO, MARCA SOBRELLENADO DE NIVEL"], "Válvula 3 vías / Interlock": ["* BOTÓN DE VÁLVULA INTERLOCK DEL COMPARTIMENTO 2 DOBLADA", "* NO CUENTA CON EL BOTÓN DE VÁLVULA INTERLOCK DEL PRIMER COMPARTIMENTO (IMPIDE EL FUNCIONAMIENTO DEL PERMISIVO)", ": 29/5/26 7:40 SELE CALLO EL PULSADOR DE LA VÁLVULA INTERLOCK", "FUGA DE AIRE POR VÁLVULA 3 VÍAS, ROMBOS Y PORTA ROMBOS ROTOS", "PULSADOR DE 3 VÍAS", "PULSADOR DE VÁLVULA DE 3 VÍAS (7-01-26)", "VALVULA 3 VIAS FESTO DAÑADA,PENDIENTE ENVIO NUMERO DE GUIA", "VALVULA INTERLOCK DE COMPARTIMENTO 1 NO CUENTA CON PERILLA"], "Válvula Betts / API": ["REINCIDENCIA FUGA DE AIRE EN VÁLVULA API COMP 1", "TESTIGO DE ABS (REINCIDENCIA)", "TORNILLOS DE MANERAL DE VÁLVULAS APIS AMBOS TONELES TORNADOS IMPIDEN LA CARGA Y DESCARGA DE PRODUCTO", "VÁLVULA BETTS DIRECTA"], "Válvula de emergencia / Oblea": ["12. SISTEMA DE LLENADO POR EL FONDO VALVULA DE PARO DE EMERGENCIA ROTA", "MANGUERA DE AIRE DE PARO DE EMERGENCIA RESECA, REQUIERE REEMPLAZO", "PARO DE EMERGENCIA DAÑADO", "PARO DE EMERGENCIA ROTO", "VALVULA TIPO OBLEA DAÑADA, IMPRESORA DAÑADA, VENTILAS DE COFRE SUELTAS", "VÁLVULA DE EMERGENCIA DAÑADA"]}, "Sistema de Postratamiento": {"Bomba de UREA": ["FALLA EN BOMBA DE UREA", "FALLA EN BOMBA DE UREA, CÓDIGOS DE FALLA EN SISTEMA DE POSTRATAMIENTO", "FALLO INTERMITENTE EN BOMBA DOSIFICADORA DE UREA 15/5/26"], "Depósito de UREA": ["FUGA DE UREA POR DEPOSITO", "GARANTÍA DE SINIESTROS ADMINISTRADO 02MAYO", "GOLPE EN BASE Y DEPOSITO DE UREA, PENDIENTE ODA"], "Otros - Postratamiento": ["/ SESNSOR DE PRESIÓN ADMISIÓN EN\"T\"", "A/C NO FUNCIONA", "ABRASADERA DEL DEPÓSITO DEF", "ACTIVACIÓN DE AMBAS VÁLVULAS TIRADORES AL ACCIONAR UNA SOLA", "ADMINISTRADO CAMBIAR EMPAQUES DE CAMPANA DE DESCARGA", "AMORTIGUADORESDELANTEROS DEL TRACTOR MAL ESTADO", "ARNES DE CAMARA DE REVERSA DAÑADO, NO SE VE CAMARA", "BUJES MAL ESTADO", "C CON FALLA, NO ENFRÍA", "C, NO ENFRÍA", "CAMARA DE REVERSA NO FUNCIONADAÑO EN BANDERIN DE TONEL, LIMPIAPARABRISAS, GOLPE EN SALPICADERA DE TONEL 4250651217 SINIESTRO IMPROCEDENTE", "COLOCAR BANDERIN TRASERO L", "COLOCAR FENDERS", "COMENTA OAT QUE EN CARGA Y DESCARGA PIERDE AIRE", "CÓDIGOS ABC", "DER. COLOCAR SEGURO DE TAPA DE PRSINTANCK", "ENGRANES ROTOS EN MEDIDOR TONEL 2, INTERVENIDO POR TAD EL CASTILLO", "FALLA EN SISTEMA A", "FALLAS ADMIN: TAPÓN DE TANQUE AUTOCONSUMO DAÑADO (6-01-26)", "FALLAS ADMINSITRADAS: FALTANTE BOTÓN LLAMADA DE EMERGENCIA", "FALTAN TORNILLOS DE TOLVA DE ESCAPE", "FILTRACION DE AGUA EN CABINA", "FUGA ACEITE TAPA DE MAZA TONEL", "FUGA DE AIRE AL DESCARGAR", "FUGA ESCAPE POR JUNTA MULTIPLE", "FUGA PRODUCTO POR DOMO(FALTA SONDA MADISON, TAPON TEMPORAL)", "FUNDA TÉRMICA DAÑADA", "GUIAS Y CONTRA GUIAS DE COFRE DAÑADAS", "JUEGO PERNOS DE DIRECCION, BRAZO VIAJERO Y BALEROS DE RUEDA", "MANOMETRO DAÑADO", "MANTENIMIENTO Y DIAGNOSTICO DE POSTRATAMIENTO", "NO CONSUME UREA", "PANTALLA DE REVERSA SE VE BORROSA", "PARO DE EMERGENCIA DAÑADO", "PENDIENTE FILTROS LICAMEX", "POR LA INTENSIDAD DE LA FUGA NO LE PERMITE DESCARGAR COMPLETAMENTE LE FALTAN APROXIMADAMENTE 10 MIL L", "PÉRDIDA DE POTENCIA Y CÓDIGOS EN TABLERO (GOLPE EN CATALIZADOR DIAGNOSTICADO POR AGENCIA CAJASA)", "PÉRDIDA DE POTENCIA, CÓDIGOS EN TABLERO EN SISTEMA DE POSTRATAMIENTO", "RECOGER EN CAJASA LZC 22-05-26", "REPOSICIÓN FALTANTE TAPÓN TANQUE DE AUTOCONSUMO", "ROMBOS DESGASTADOS", "SISTEMA DE CSR 25% REDUCION DE TORSION", "TABLERO DESARMADO", "TAPON DEL TANQUE DE COMBUSTIBLE, DAÑADO DEL SEGURO", "TAPÓN DE AUTOCONSUMO FALTANTE OPERATIVO 29/04/26", "VISERA LADO CHOFER DAÑADA"], "Reducción de torque / Código": ["CODIGO EN TABLERO SPN 4334 FMI 16 (FALTA DE BUENAS PRÁCTICAS DE CEBADO)", "FALLA DE COMUNICACIÓN EN TABLERO, PÉRDIDA DE POTENCIA DTCS PRESENTES, SPN 4331 FMI 16 (SISTEMA DE POSTRATAMIENTO)", "REDUCCIÓN DE POTENCIA POR FALLA EN SISTEMA DE POSTRATAMIENTO"], "Regeneración / Hollín": ["CÓDIGO ACTIVO DE FALLO SCR DPF SATURADO", "REGENERACIÓN FORZADA Y MANTENIMIENTO AL SISTEMA SCR", "SATURACIÓN DE HOLLIN , REGENERACIÓN FORZADA"], "Sensor NOx / SCR": ["CODIGOS DEL SCR SE ENCUENTRA EN DACZA", "CÓDIGO ACTIVO SCR REDUCCIÓN TORQUE 25%", "FILTRO SCR FUNDIDO", "FILTROS SCR SIN CONEXION DE CATALIZADOR SPN 4794 FMI 31", "REDUCCIÓN DE TORQUE, CÓDIGO SCR", "REVISAR CÓDIGO ERROR SCR REDUCCIÓN DE TORSIÓN DEL 25%", "SCR DFP REQUERIDO", "SENSOR DE ADMISIÓN"]}, "Sistema de Telemetría y Video": {"Botón emergencia / Membrana": ["2 ARNES DUPON", "BANDERINES DAÑADOS", "BOTON DE MEMBRANA", "BOTONERA DE CRISTALES DAÑADA", "BOTONERA DE VIDRIOS DAÑADA", "BOTÓN DE ELEVAR CRISTALES QUEBRADO POR USO", "BOTÓN DE MEMBRANA DE LLAMADA DE EMERGENCIA NO FUNCIONA", "BOTÓN DE MEMBRANA FALTANTE , NO SE LOGRA ENCONTRAR AL INTERIOR DE LA UNIDAD", "DAÑO EN BOTONERA DE ELEVADORES LADO PILOTO", "FUGA DE AIRE BAJO CABINA", "MANOMETROS DE CAJA DE VALVULA DAÑADOS", "MICROFONO", "NO CUENTA CON BOTÓN LLAMADA DE EMERGENCIA", "RETEC PENDIENTE MANTENIMIENTO CORRECTIVO", "RETEC PENDIENTE MANTENIMIENTO CORRECTIVO / MOVON / MICRIFONO / BOTON DE MEMBRANA / 2 ARNES DUPON / RELE BOBINA INDEPENDIENTE", "RETEC PENDIENTE MANTENIMIENTO CORRECTIVOTRAFFILOG = KIT DE VOZ EN CABINA ( MICRO, BOCINA BOTON DE MEMBRANA )", "TORNILLO CAPADO DE PERCHA"], "Comunicación cabina": ["NO HAY COMUNICACIÓN DE CABINA CON TELÉFONO DE TORRE. EL SIM NO ESTÁ DADO DE ALTA CON EL LLAM DE LA TERMINAL., BAJO NIVEL DE LÍQUIDO LIMPIA PARABRISAS"], "Cámara de reversa": ["CABLE DE REVERSA DAÑADO (4-9-25)", "CAMARA DE REVERSA DISTORSIONADA", "CONECTOR DAÑADO DE CABINA DE CAMARA DE REVERSA", "CÁMARA DE REVERSA CON FALLA, IMAGEN BORROSA", "CÁMARA DE REVERSA IMAGEN BORROSA", "CÁMARA DE REVERSA NO DA IMAGEN", "CÁMARA DE REVERSA NO FUNCIONA", "CÁMARA DE REVERSA SIN SEÑAL", "CÁMARA FRONTAL Y DOMO NO FUNCIONAN POR CORTE DE CABLES POR CRISTALERA EN MAZATLÁN AL REEMPLAZAR PARABRISAS", "DESCONEXION DE CAMARAS, SE REPMPLAZO DE MDVR 20/5/26", "DESCONEXIÓN CÁMARAS VIDEO DEL SISTEMA TELEMETRÍA, REPORTE 259972", "DMAS / CÁMARA DE REVERSA", "FALLA ADMNISTRADA: CÁMARA DE REVERSA CON FALSO CONTACTO, SE PIERDE IMAGEN"], "DMAS / Grabación": ["DMAS / GANCHO DE DOMO / TORNILLO DE ESCALERA SUELTA / SELLO ELECTRÓNICO", "MANÓMETRO DAÑADO, DMAS Y BANDERINES ROTOS", "NO GUARDA REGISTROS HISTÓRICOS DE VIDEOS TICKET #266217"], "Glicerina / Manómetro": ["FUGA DE GLICERINA POR MANOMETRO"], "Impresora": ["IMPRESORA NO SIRVE"], "Otros - Telemetría": ["8 CARTELES ROTOS Y DESGASTADOS", "A/C NO ENFRÍA", "ABRAZADERA VENCIDA DEL ESCAPE", "AMORTIGUADOR DE COFRE CHORREADO", "BASE DE PORTA ROMBO TRASERO FISURADO LADO PILOTO", "DAÑO EN VISERA LADO PILOTO", "DAÑO OPERATIVO EN DEFENSA DELANTERA DERECHA", "DIMAS NO FUNCIONA JALA SIN CODIGO", "FALTA TUERCA DE LLANTA POS 18", "FALTAN TORNILLOS DE ABRAZADERA DE ESCAPE", "FOCO DE DIRECCIÓN LADO COPILOTO FUNDIDO", "MEDIDOR CUENTA LITROS SIN INTERNOS 1ER COMPARTIMIENTO (9-01-26)", "MEDIDORES DIRECTOS T#2 Y T#1", "NEUMATICOS P#7 Y P#10 DAÑADOS", "ROMBOS DAÑADOS", "SALPICADERA DE TONEL DELANTERA DERECHA FISURADA", "SELLO ELECTRÓNICO NO FUNCIONA", "SINIESTRO GOLPE EN FALDÓN LODERA DELANTERA, ESCALÓN DE PUERTA DERECHA", "TAPON DE FALDON NO TRAE", "TARDE EN DESCARGAR", "VISERA DE CHOFER SUELTA", "VISERA ROTA DAÑO OPERATIVO"], "TCS3000": ["TCS3000 CON FALLA EN VALVULA BETS PUENTEADA"]}, "Suspensión": {"Amortiguadores": ["AMORTIGUADOR DE CABINA", "AMORTIGUADOR DELANTERA POSICIÓN DERECHA ESCURRIENDO ACEITE", "AMORTIGUADORES", "AMORTIGUADORES DAÑADOS/GOLPETEO BAJO LA CABINA/BOTON DE INTERMITENTES DAÑADO/CUBRE ESCAPE DAÑADO/", "AMORTIGUADORES DE 3ER EJE VENCIDO", "AMORTIGUADORES DE CABINA DAÑADOS", "AMORTIGUADORES DELANTEROS DAÑADOS", "AMORTIGUADORES DELANTEROS Y TRASEROS", "AMORTIGUADORES TRASEROS DAÑADOS", "AMORTIGUADORES VENCIDOS 2DO Y 3ER EJE", "BALERO CENTRAL DE CARDAN", "BAMDA DE MOTOR", "BASE DE AMORTIGUADOR DE COFRE ROTA", "BASES DE AMORTIGUADORES DAÑADOS (TONEL)", "BOLSA SUSPENCION 2 DO EJE DERECHO 3 ER EJE IZQU", "FIJAR FARO DERECHO", "FIJAR TUBO DE RECUPERADORES DE VAPORES", "LIMPA PARABRISA", "REEMPLAZO AMORTIGUADORES 3 ER EJE / BUJES BALANCIN 2 Y 3 ER EJE / CODIGO SCR / AJUSTE POLIN CORTO / 3H4", "REEMPLAZO DE AMORTIGUADORES 3 ER EJE", "REEMPLAZO DE AMORTIGUADORES DE 2 Y 3 ER EJE", "RETEN DE YUGO DE INTER DOFERNCIAL", "REVISIÓN AMORTIGUADORES", "SEGURO DE COFRE", "SELLO ELECTRÓNICO", "SOPORTE SUPERIOR DE AMORTIGUADOR QUEBRADOS DERECHO E IZQ. )", "TORNILLO DE AMORTIGUADOR ROTO", "TORNILLOS DE TENSORES LATERALES DE 2DO EJE"], "Bolsas de aire": ["BOLSA DE AIRE CON FUGA", "BOLSA DE AIRE CON FUGA DE AIRE", "FUGA DE AIRE EN BOLSA DE AIRE EJE 2 L. COPILOTO", "FUGA DE BOLSA DE AIRE", "PRESOSTATO DESCALIBRADO", "SE DEBE A TAD BOLSA DE AIRE DE 3ER EJE LADO IZQUIERDO"], "Desviación / Geometría": ["C NO ENFRÍA", "INCLINACION LADO DERCHO", "SE JALA ALA DERECHA", "SE JALA HACIA LA DERECHA", "UNIDAD SE JALA A LA DERECHA Y A"], "Muelles / Resortes": ["MUELLE DELANTERO DAÑADO LADO DERECHO", "MUELLE DELANTERO ROTO L.I", "MUELLE DERECHO", "REQUIERE BRIO EN MUELLES", "REVISIÓN BUJES MUELLES DELANTERAS", "REVISIÓN DE MUELLES (BRÍO)"], "Módulo / Válvula niveladora": ["FALLA EN MODULO DE SELENOIDES NO ACTIVAN LAS BOLSAS DE AIRE", "FUGA DE AIRE POR VÁLVULA NIVELADORA", "REQUIERE REEMPLAZO DE VARILLA VÁLVULA NIVELADORA BOLSAS DE AIRE POR PRESENTAR DESGASTE", "VALVULA NIVELADORA DE TRACTO CON FUGA", "VARILLA NIVELADORA DE SUSPENSIÓN ROTA"], "Otros - Suspensión": ["**POLINES FRACTURADOS", "**TAPÓN DE TANQUE DIESEL DAÑADO", "*TAPON DE TANQUE DE AUTOCONSUMO EN MAL ESTADO", "1. CAMBIO DE BRAZO VIAJERO PRESENTA JUEGO", "2 BOLSAS DE AIRE DAÑADAS (3/03/26)", "2 BOLSAS DE AIRE DAÑADAS EN EJE 3 POSICIONES 7,8,9 Y 10", "3. CAMBIO DE TORNILLO DE PERCHA LADO IZQUIERDO (ESTA BARRIDO)", "5. COLOCAR TORNILLO DE SOPORTE DE TANQUE DE AUTOCONSUMO ESTÁ CAPADO", "5. SUSPENSION", "6. CAMBIO DE PLUMAS LIMPIAPARABRISAS", "7. REVISAR FUGA DE TANQUE DE AUTOCONSUMO", "8 CARTELES ROTOS Y DESGASTADOS", "8. COLOCAR EL BOTÓN PARO DE EMERGENCIA LADO IZQUIERDO", "9. APRETAR TENSORES LATERALES DEL SEGUNDO EJE", "ABRAZADERA DE ESCAPE DAÑADA", "ABRAZADERA DE MANGUERA DE REFRIGERANTE DAÑADO (QUEMADA)", "ABRAZADERA DE SUSPENCIÓN SUELTA", "AMORIGUADORES CHORREADOS", "ASIENTO DAÑADO", "BANDERINES TRASEROS DAÑADOS", "BANDERINES TRASEROS DAÑADOS Y LODERA COPILOTO ROTA", "BANDEROLA ROTA DE DEFENSA DELANTERA", "BASES DE POSTENFRIADOR ROTAS", "BISAGRA DE LAS PUERTAS DE CAJA DE VALVULAS DAÑADAS", "BISERA IZQUIERDA CON JUEGO", "BOLSA DE SUSPENSION POROSA TERCER EJE LADO IZQUIERDO, REVISAR CINTROL CRUCERO NO ACTIVA AL IR ANDANDO, CAMBIO DE TAPON DE AUTOCONSUMO (FUGA COMBUSTIBLE)", "BOLSA POROSA DELANTERA LADO DERECHO", "BOTON DE CONTROL DE MANDO RTO", "BOTONERA DE CRISTAL DAÑADA", "BOTONERA DE ELEVADOR DE CRISTALES ROTA", "BOTONERA DE ESPEJOS OPERADOR", "BOTONERA DE PUERTA IZQ, BOTONES DESTRABADAS", "BOTONERA DE PUERTA IZQ, BOTONES DESTRABADOS", "BOTONERA DE VENTANA LADO IZQ ROTA", "C AMARRADO", "C DAÑADO (TRAE BANDA MÁS CHICA) (2-06-26-)", "CAMARA DE REVERSA BORROSA", "CAMARA DE REVERSA NO FUNCIONA", "CINCHOS Y TOPES DE COFRE DAÑADOS", "CLIMA DEJA DE ENFRIAR", "COMPRESOR A", "COMPRESOR DE A", "CORTA CARGA Y DESCARGA POR FUGA DE AIRE EN SISTEMA", "CUENTA LITROS DEJA DE CONTABILIZAR", "CÁMARA DE REVERSA DAÑADA", "DAÑO EN BANDERINES", "DAÑO EN BOTONERA DE ELEVADORES LADO PILOTO", "DAÑO EN CABLE 7 HILOS", "DAÑO EN CABLE DE CAMARA DE REVERSA", "DAÑO EN EL TAPÓN DE AUTOCONSUMO.**", "DAÑO EN LLANTA POSICION 17 Y FENDER", "DAÑO EN MANÓMETRO EN CAJA DE VÁLVULAS", "DAÑO EN MATACHISPAS (DESOLDADO)", "DAÑO EN PARRILLA DE COFRE", "DAÑO EN PINTURA DEL TONEL", "DAÑO EN RECUBRIMIENTO DE CABLE 7 HILOS", "DAÑO EN RECUBRIMIENTO DE CABLE HELICOIDAL", "DAÑO EN RECUBRIMIENTO PISO CABINA", "DAÑO EN SEGURO DE TAPA DE SELLO ELECTRÓNICO", "DAÑO EN SOLDADURA DE ESCALERA", "DAÑO EN SOLDADURA DE PORTA DOCUMENTOS", "DAÑO EN VISERA LADO OPERADOR", "DESGASTE EN VOLANTE", "DESGASTE IRREGULAR EN LLANTAS DELANTERAS", "EMBRAGUE ARRATSRA Y PATINA", "EXCESO DE AGUA EN TANQUES DE AIRE", "FALLA EN 5TA RUEDA", "FALLA EN CÁMARAS DE VIDEO POS. #1,#2 Y #5", "FALLA EN IMPRESORA", "FALLA EN IMPRESORA COMPARTIMENTO 2", "FALLA EN PANTALLA DEL TCS-3000 (YA NO SE VISUALIZA)", "FALLA EN SENSOR DE TEMPERATURA DE CUENTALITROS COMPARTIMENTO 1", "FALTA DE LÍQUIDO LIMPIA PARABRISAS", "FALTA LODERA DE TONEL", "FALTA SEGURO DE PUERTA DE CAJA DE VALVULAS", "FALTA SEGURO DE PUERTA DE SELLO ELECTRONICO", "FALTANTE DE ESPACIADOR BALERO FLECHA CARDAN", "FALTANTE MANIJA OPERADOR (DAÑO OPERATIVO)", "FALTANTE TORNILLO DE CHASIS EN LARGUERO LADO DERECHO DE CABINA", "FENDER DESAJUSTADA", "FOCO NAVEGACIÓN TRASERA NO ENCIENDE4", "FUGA ACEITE EN SEGUNDO EJE", "FUGA ACEITE POR FUNDA DE BAYONETA", "FUGA DE ACEITE DIFERENCIAL", "FUGA DE ACEITE TAPAS DE MAZA TONEL (4)", "FUGA DE AIRE DEL FILTRO REGULADOR", "FUGA DE AIRE EN BOLSA DE SUSPENSIÓN", "FUGA DE AIRE EN CAJA DE PLC DE TCS3000", "FUGA DE AIRE EN CAJA PLC. (FISURA EN VASO FILTRO REGULADOR)**", "FUGA DE AIRE EN CONEXION DE LA TRANSMISION", "FUGA DE AIRE POR CONECTOR DE SECADOR", "FUGA DE AIRE POR DEBAJO DE LA CABINA (5/03/26)", "FUGA DE PRODUCTO EN DOMO", "FUGA DE PRODUCTO EN SONDA MADISON", "FUGA DE UREA EN INYECTOR", "FUNDA TÉRMICA", "FUNDA TÉRMICA DAÑADA", "GOLPE DEFENSA TRASERA TONEL", "GOLPE EN COFRE", "GOLPETEO EN QUINTA RUEDA", "GRANADAS DE TENSORES DAÑADOS", "IMAN DEL TAPIN DEL DOMO NO TRAE", "INGRESA HUMO AL INTERIOR DE CABINA", "INSUMO DE BOTIQUIN CADUCADOS", "JUEGO EN EJES TRASEROS DAÑAN RINES Y LLANTAS", "JUEGO EN QUINTA RUEDA", "JUNTA DE LA TOMA DE MUESTRA ROTA", "LLANTA POSICIÓN 10 PONCHADA", "LLANTAS DESGASTADAS POSICIÓN 2,7 Y 8", "MANGUERA RECUPERADORA DE VAPORES DAÑADA", "MATACHISPAS", "MEDIDOR DEL COMPARTIMENTO 2 AMARRADO (SE RETIRAN INTERNOS DE AMBOS MEDIDORES)", "MEDIDOR DIRECTO TONEL 1 (ENGRANES DAÑADOS 13-04-26)", "MNATENIMIENTO PREVENTIVO", "NO CUENTA CON TORNILLO DE PERCHA", "NO CUENTA CON TORNILLO DE TENSOR TRASERO LADO DERECHO", "NO ENCIENDE LUZ DE ESTROBO NI TORRETA*", "NO ENTRA EL CONTROL CRUCERO", "NO SE VE CÁMARA DE REVERSA", "NO TRAE REJILLA DE VENTILACION LADO IZQ", "OXIDO EN PORTA PLACA", "PANTALLA TCS3000 CON FALLA", "PASAMANOS DE ESCALERA DESOLDADO", "PERILLA DE LUCES DAÑADA", "PINTURA DE DEFENSA TRASERA SE ESTA CAYENDO", "POLINES DE CARGA PODRIDOS", "PORTA LLANTAS DAÑADO (SOLDADURA ROTA)", "PORTA LLANTAS DAÑADO/DESOLDADO 05/06/2026", "PRESENTA DESGASTE IRREGULAR EN LLANTA POSICIÓN 2", "PRESENTA FUGA DE AIRE EN BOLSA DE SUSPENSIÓN TONEL", "PUERTA LADO OPERADOR NO ABRE POR DENTRO", "PUNTA DE ESCAPE ROTA, ABRAZADERAS TIPO U DAÑADAS, PORTA DOCUMENTOS DAÑADOS, ANTENA BLACK BOX DAÑADAESPEJO LATERAL IZQUIERDO", "REVISAR SUSPENSIÓN AL NO PASAR ALINEACIÓN Y BALANCEO", "REVISAR SUSPENSIÓN DELANTERA POR DESGASTE IRREGULAR EN LLANTAS", "REVISIÓN COMPLETA DE SUSPENSIÓN", "REVISIÓN DE SUSPENSIÓN POR DESGASTE IRREGULAR EN POSICIÓN 2", "REVISIÓN SOPORTES TRANSMISIÓN, VIBRACIÓN AL INTRUDUCIR CAMBIO", "SE ESCUCHA RUIDO EXTRAÑO AL ATACAR SUBIDAS", "SE REQUIERE BANDA ORIGINAL", "SEGURO DE LA TAPA DEL GENERADOR DE SELLOS ROTO", "SEGURO TAPA DE BATERIA (5-02-26)", "SENSOR DE ABS DE TONEL DAÑADO", "SIIN PLATO DE BETTS 10/13/2025", "SIN LODERA", "SINIESTRO", "SONDA MADISON QUEBRADA", "SOPORTE DE ESCALERA ROTO", "SOPORTE DE FENDER DAÑADO", "SUSPENSIÓN TRASERA DAÑADA", "SUSPENSIÓN TRASERA DAÑADO", "TAPON DE COMBUSTIBLE ROTO (151070983) BOTONERA DE CRSITALES LADO CONDUCTOR", "TAPÓN DAÑADO DE AUTOCONSUMO", "TENSOR DE SUSPENSIÓN EJE TRASERO ROTO", "TENSORES DAÑADOS", "TENSORES DE DIFERENCIAL REVENTADOS", "TESTIGOS ACTIVOS DE ABS ACTIVOS EN TABLERO", "TORNILLO DE EL CINCHO DE TANQUE DE AUTO CONSUMO", "TORNILLO DEL BRAZO DEL EJE 2 FLOJO LADO COPILOTO", "TORNILLOS DE PUENTE DELANTERO DERECHO", "TORNILLOS SUPERIOR TENSOR 2DO EJE", "TORQUE DE TENSORES 2DO Y 3ER EJE AMBOS LADOS", "TUBO DE SONDA MADISON QUEBRADAS LOS 2 COMPARTIMIENTO", "VALVULA BETS SE ATORA", "VIBRACIÓN ESPEJO LADO OPERADOR"], "Pernos / Bujes": ["AJUSTE DE PERCHAS BUJES DE BRAZOS TENSORES DAÑADOS", "BUJES DE BARRAS TENSORAS SUPERIORES DE DIFERENCIALES DAÑADOS", "CAMARA DE REVERSA BORROSA, SE REQUIERE CALIBRACION DE EMBRAGIUE , POLIN DE CARGA AGRIETADOFALTA PERNO DE DIRECCION", "DAÑO EN BUJES DE TIRANTE DE SUSPENSION DE TRACTOR", "JUEGO EN PERNOS DE DIRECCIÓN", "JUEGO PERNOS DE DIRECCION, BRAZO VIAJERO Y BALEROS DE RUEDA", "JUEGO PERNOS DIRECCION, BRAZO VIAJERO Y BALEROS DE RUEDA", "VALORAR BUJES TRIFUNCIONALES 2DO EJE"]}, "Transmisión": {"Cardan / Cruceta": ["* TORNILLO FLOJO EN LA ABARZADERA DE LA CRUCETA DEL TUBO CARDAN", "CRUSETA DE BARRA CARDAN DAÑADA"], "Otros - Transmisión": ["/ ROMBOS SEGURIDAD DAÑADOS / PISO CABINA DESGASTADO LADO OPERADOR / FUGA DE AIRE EN TRASMISION", "AL AJUSTAR EMBRAGUE TÉCNICO DE ASE ENCUENTRA DISCO DE PARO DE EMBRAGUE ROTO", "BASE DE PORTA ROMBOS LADO DERECHO DE TONEL ROTO", "NO CUENTA CON SOPORTE Y TORNILERIA DE TENSOR DE DIFERENCIAL EN EL EJE TRASERO"], "Palanca / Cambios": ["PALANCA DE CAMBIOS FLOJA", "RUIDO EN TRANSMISIÓN AL INGRESAR CAMBIOS"], "Ruido / Vibración": ["HR SE NEUTRALIZA TRANSMISIÓN", "RUMBA TREN MOTRIZ A PARTIR DE LOS 60 KM"]}};
+
+var PROVS = ["ASE","CRA","CRA / ASE","PEMEX","Aseguradora","KREATO","TRAFFILOG","Rodamientos","PetroCalibrations","Juridico","Agencia"];
+
+// ESTADO
+var DB = [];
+var waLog = [];
+var pfx = "PMX", mtto = "", grp = "", sfs = [], fallas = [];
+var estSel = {}, subEstSel = {}, cierreSel = {};
+
+// INIT
+document.getElementById("hdr-fecha").textContent = new Date().toLocaleDateString("es-MX",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+
+// Build grupo grid
+var ggEl = document.getElementById("gg");
+Object.keys(CAT).sort().forEach(function(g){
+  var subCount = Object.keys(CAT[g]).length;
+  var fallaCount = Object.values(CAT[g]).reduce(function(a,b){return a+b.length;},0);
+  var d = document.createElement("div"); d.className = "gc";
+  var n = document.createElement("div"); n.className = "gc-name"; n.textContent = g;
+  var c = document.createElement("div"); c.className = "gc-cnt"; c.textContent = subCount + " subgrupos / " + fallaCount + " fallas";
+  d.appendChild(n); d.appendChild(c);
+  d.onclick = function(){ selGrupo(g, d); };
+  ggEl.appendChild(d);
+});
+
+// --- HELPERS ---
+function alerta(msg, tipo){ tipo = tipo||"info";
+  var c = document.getElementById("alert-container");
+  var a = document.createElement("div"); a.className = "alert alert-" + tipo; a.textContent = msg;
+  c.appendChild(a); setTimeout(function(){ a.remove(); }, 5000);
+}
+function loader(on){ document.getElementById("loader").classList.toggle("on", on); }
+function goTab(t){
+  document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+  document.querySelectorAll(".nav-tab").forEach(function(v){ v.classList.remove("active"); });
+  document.getElementById("view-"+t).classList.add("active");
+  document.getElementById("tab-"+t).classList.add("active");
+  if(t==="sub") cargarSub();
+  if(t==="coord") cargarCoord();
+  if(t==="ger") cargarGer();
+  if(t==="cierre") cargarCierre();
+  if(t==="historial") cargarHistorial();
+}
+
+// --- FETCH WRAPPER ---
+function apiFetch(payload, onOk, onErr){
+  loader(true);
+  fetch(WEBHOOK, {method:"POST", body:JSON.stringify(payload)})
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      loader(false);
+      if(res.success) onOk(res);
+      else { alerta("Error: " + (res.mensaje||"desconocido"), "danger"); if(onErr) onErr(res); }
+    })
+    .catch(function(e){ loader(false); alerta("Error de conexion: " + e.message, "danger"); if(onErr) onErr(e); });
+}
+
+// --- SUPERVISOR ---
+function onSupSel(){
+  var sup = document.getElementById("sup-sel").value;
+  document.getElementById("sup-form").style.display = sup ? "block" : "none";
+  document.getElementById("sup-fallas-panel").style.display = sup ? "block" : "none";
+  document.getElementById("sup-idle").style.display = sup ? "none" : "block";
+}
+function setPfx(p){ pfx = p;
+  document.getElementById("pfx-pmx").className = "pfx-btn" + (p==="PMX" ? " pmx" : "");
+  document.getElementById("pfx-tis").className = "pfx-btn" + (p==="TIS" ? " tis" : "");
+  var inp = document.getElementById("unit-num");
+  inp.placeholder = p==="PMX" ? "20001" : "0000001";
+  inp.maxLength = p==="PMX" ? 5 : 7;
+  inp.value = "";
+}
+function setMtto(v){ mtto = v;
+  document.getElementById("mc-prev").className = "mc" + (v==="Preventivo" ? " prev" : "");
+  document.getElementById("mc-corr").className = "mc" + (v==="Correctivo" ? " corr" : "");
+}
+var subgrp = "";
+
+function selGrupo(g, el){
+  document.querySelectorAll("#gg .gc").forEach(function(c){ c.classList.remove("on"); });
+  el.classList.add("on");
+  grp = g; subgrp = ""; sfs = [];
+  // Show subgrupo panel
+  var sgg = document.getElementById("sgg"); sgg.innerHTML = "";
+  sgg.className = "gg sgg";
+  Object.keys(CAT[g]).sort().forEach(function(sg){
+    var cnt = CAT[g][sg].length;
+    var d = document.createElement("div"); d.className = "gc";
+    var n = document.createElement("div"); n.className = "gc-name"; n.textContent = sg;
+    var c = document.createElement("div"); c.className = "gc-cnt"; c.textContent = cnt + " falla" + (cnt!==1?"s":"");
+    d.appendChild(n); d.appendChild(c);
+    d.onclick = function(){ selSubgrupo(sg, d); };
+    sgg.appendChild(d);
+  });
+  document.getElementById("panel-subgrupo").style.display = "block";
+  document.getElementById("sg-hint").textContent = "- " + Object.keys(CAT[g]).length + " subgrupos";
+  document.getElementById("panel-subfalla").style.display = "none";
+  document.getElementById("panel-obs").style.display = "none";
+  document.getElementById("panel-agregar").style.display = "none";
+  document.getElementById("sfg").innerHTML = "";
+  document.getElementById("falla-libre").value = "";
+}
+
+function selSubgrupo(sg, el){
+  document.querySelectorAll("#sgg .gc").forEach(function(c){ c.classList.remove("on"); });
+  el.classList.add("on");
+  subgrp = sg; sfs = [];
+  var fallas = CAT[grp][sg] || [];
+  var sfg = document.getElementById("sfg"); sfg.innerHTML = "";
+  fallas.forEach(function(s){
+    var d = document.createElement("div"); d.className = "sfc"; d.textContent = s;
+    d.onclick = function(){
+      if(d.classList.contains("on")){
+        d.classList.remove("on");
+        sfs = sfs.filter(function(x){ return x!==s; });
+      } else {
+        d.classList.add("on");
+        sfs.push(s);
+      }
+    };
+    sfg.appendChild(d);
+  });
+  document.getElementById("panel-subfalla").style.display = "block";
+  document.getElementById("sf-hint").textContent = "- " + fallas.length + " opciones";
+  document.getElementById("panel-obs").style.display = "block";
+  document.getElementById("panel-agregar").style.display = "flex";
+  document.getElementById("falla-libre").value = "";
+}
+function addFalla(){
+  if(!grp){ alerta("Selecciona el grupo de falla", "danger"); return; }
+  if(!subgrp){ alerta("Selecciona el subgrupo de falla", "danger"); return; }
+  var libre = document.getElementById("falla-libre").value.trim();
+  var seleccionadas = sfs.slice();
+  if(libre) seleccionadas.push(libre + " (*)");
+  if(!seleccionadas.length){ alerta("Selecciona al menos una sub-falla o escribe la falla manualmente", "danger"); return; }
+  fallas.push({grupo:grp, subgrupo:subgrp, subfallas:seleccionadas, obs:document.getElementById("obs-f").value.trim()});
+  renderRL(); resetFalla();
+  document.getElementById("btn-enviar-sup").disabled = false;
+}
+function delFalla(i){ fallas.splice(i,1); renderRL(); if(!fallas.length) document.getElementById("btn-enviar-sup").disabled = true; }
+function resetFalla(){
+  grp = ""; subgrp = ""; sfs = [];
+  document.querySelectorAll("#gg .gc").forEach(function(c){ c.classList.remove("on"); });
+  document.querySelectorAll("#sgg .gc").forEach(function(c){ c.classList.remove("on"); });
+  document.getElementById("sfg").innerHTML = "";
+  document.getElementById("sgg").innerHTML = "";
+  document.getElementById("panel-subgrupo").style.display = "none";
+  document.getElementById("panel-subfalla").style.display = "none";
+  document.getElementById("panel-obs").style.display = "none";
+  document.getElementById("panel-agregar").style.display = "none";
+  document.getElementById("obs-f").value = "";
+  document.getElementById("falla-libre").value = "";
+}
+function renderRL(){
+  var wrap = document.getElementById("rl-wrap"), rl = document.getElementById("rl");
+  if(!fallas.length){ wrap.style.display="none"; return; }
+  wrap.style.display = "block";
+  document.getElementById("rl-count").textContent = "(" + fallas.length + " falla" + (fallas.length>1?"s":"") + ")";
+  rl.innerHTML = "";
+  fallas.forEach(function(f, i){
+    var item = document.createElement("div"); item.className = "ri";
+    var num = document.createElement("div"); num.className = "ri-num"; num.textContent = "F" + (i<9?"0":"") + (i+1);
+    var info = document.createElement("div"); info.className = "ri-info";
+    var g = document.createElement("div"); g.className = "ri-g"; g.textContent = f.grupo + (f.subgrupo ? "  ▸  " + f.subgrupo : "");
+    var d = document.createElement("div"); d.className = "ri-d"; d.textContent = f.subfallas.join(" / ") + (f.obs ? " - " + f.obs : "");
+    info.appendChild(g); info.appendChild(d);
+    var del = document.createElement("button"); del.className = "ri-del"; del.textContent = "x";
+    del.onclick = (function(idx){ return function(){ delFalla(idx); }; })(i);
+    item.appendChild(num); item.appendChild(info); item.appendChild(del);
+    rl.appendChild(item);
+  });
+}
+function supEnviar(){
+  var sup = document.getElementById("sup-sel").value;
+  var num = document.getElementById("unit-num").value.trim();
+  var term = document.getElementById("sup-term").value;
+  if(!num){ alerta("Ingresa el numero de unidad", "danger"); return; }
+  if(!term){ alerta("Selecciona la terminal", "danger"); return; }
+  if(!mtto){ alerta("Selecciona Preventivo o Correctivo", "danger"); return; }
+  if(!fallas.length){ alerta("Agrega al menos una falla", "danger"); return; }
+  var payload = {
+    action: "guardar",
+    payload: {
+      supervisor: sup, unidad: pfx + num, terminal: term, mtto: mtto,
+      fallas: fallas, fecha: new Date().toLocaleDateString("es-MX"),
+      hora: new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})
+    }
+  };
+  apiFetch(payload, function(res){
+    alerta("Reporte enviado - Folio: " + res.folio, "success");
+    fallas = []; mtto = ""; renderRL(); resetFalla();
+    document.getElementById("unit-num").value = "";
+    document.getElementById("sup-term").value = "";
+    document.getElementById("mc-prev").className = "mc";
+    document.getElementById("mc-corr").className = "mc";
+    document.getElementById("btn-enviar-sup").disabled = true;
+    updateBadges();
+  });
+}
+
+// --- SUBGERENTE ---
+function cargarSub(){
+  apiFetch({action:"obtener", filtros:{estado:"REPORTADO"}}, function(res){
+    DB = res.datos || [];
+    renderSub(DB);
+    var all = res.todos || DB;
+    document.getElementById("ss-t").textContent = all.length;
+    document.getElementById("ss-p").textContent = all.filter(function(r){ return r.estado==="REPORTADO"; }).length;
+    document.getElementById("ss-a").textContent = all.filter(function(r){ return r.estado==="APROBADO"||r.estado==="ASIGNADO"||r.estado==="CERRADO"; }).length;
+    document.getElementById("ss-r").textContent = all.filter(function(r){ return r.estado==="RECHAZADO"; }).length;
+    document.getElementById("ss-i").textContent = all.filter(function(r){ return r.estado==="ASIGNADO"; }).length;
+    updateBadges(all);
+  });
+}
+function renderSub(data){
+  var c = document.getElementById("sub-cards"); c.innerHTML = "";
+  var pend = data.filter(function(r){ return r.estado==="REPORTADO"; });
+  if(!pend.length){ c.innerHTML = "<div class=\"empty\"><div class=\"empty-i\">Ok<" + "/div><div class=\"empty-m\">Sin fallas pendientes de validacion<" + "/div><" + "/div>"; return; }
+  pend.forEach(function(r){ c.appendChild(buildSubCard(r)); });
+}
+function buildSubCard(r){
+  var card = document.createElement("div"); card.className = "fc";
+  var hdr = document.createElement("div"); hdr.className = "fc-h";
+  hdr.onclick = function(){ document.getElementById("sfcb-"+r.folio).classList.toggle("on"); };
+  var fol = document.createElement("div"); fol.className = "fc-folio"; fol.textContent = r.folio;
+  var inf = document.createElement("div"); inf.className = "fc-info";
+  var tit = document.createElement("div"); tit.className = "fc-title"; tit.textContent = r.unidad + " - " + r.terminal;
+  var met = document.createElement("div"); met.className = "fc-meta"; met.textContent = r.fecha + " " + r.hora + " | " + r.supervisor + " | " + r.mtto + " | " + (r.fallas?r.fallas.length:1) + " falla(s)";
+  inf.appendChild(tit); inf.appendChild(met);
+  var sb = document.createElement("span"); sb.className = "sb sb-rep"; sb.textContent = "Pendiente";
+  hdr.appendChild(fol); hdr.appendChild(inf); hdr.appendChild(sb); card.appendChild(hdr);
+  var bod = document.createElement("div"); bod.className = "fc-b"; bod.id = "sfcb-"+r.folio;
+  var fi = document.createElement("div"); fi.className = "fi"; fi.style.marginTop = "10px";
+  var fallasList = r.fallas || [{grupo:r.tipoFalla||"Falla",subfallas:[r.notas||""],obs:""}];
+  fallasList.forEach(function(f){
+    var it = document.createElement("div"); it.className = "fi-item";
+    var g = document.createElement("div"); g.className = "fi-g"; g.textContent = f.grupo;
+    var d = document.createElement("div"); d.className = "fi-d"; d.textContent = (f.subfallas||[]).join(" / ") + (f.obs?" - "+f.obs:"");
+    it.appendChild(g); it.appendChild(d); fi.appendChild(it);
+  });
+  bod.appendChild(fi);
+  // ACC SUB
+  var acc = document.createElement("div"); acc.className = "acc acc-sub";
+  var at = document.createElement("div"); at.className = "acc-title"; at.textContent = "Validacion - Subgerente";
+  acc.appendChild(at);
+  // Estatus chips
+  var el = document.createElement("div"); el.style.cssText = "font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;margin-bottom:6px;"; el.textContent = "Estatus operativo *";
+  acc.appendChild(el);
+  var er = document.createElement("div"); er.className = "ec-big-row";
+  [["Op","Operando"],["Fa","Falla administrada"],["Fo","Fuera de Operacion"]].forEach(function(opt){
+    var eb = document.createElement("button"); eb.className = "ec-big"; eb.setAttribute("data-v", opt[1]);
+    eb.innerHTML = "<span class=\"ebi\">" + opt[0] + "<" + "/span><span class=\"ebl\">" + opt[1] + "<" + "/span>";
+    eb.onclick = function(){
+      er.querySelectorAll(".ec-big").forEach(function(b){ b.classList.remove("on"); });
+      eb.classList.add("on"); subEstSel[r.folio] = opt[1];
+      document.getElementById("sub-est-err-"+r.folio).style.display = "none";
+    };
+    er.appendChild(eb);
+  });
+  acc.appendChild(er);
+  var eerr = document.createElement("div"); eerr.id = "sub-est-err-"+r.folio;
+  eerr.style.cssText = "font-size:10px;color:#dc3545;margin-bottom:8px;display:none;"; eerr.textContent = "Selecciona el estatus para aprobar";
+  acc.appendChild(eerr);
+  var ol = document.createElement("div"); ol.style.cssText = "font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;margin:8px 0 4px;"; ol.textContent = "Observaciones (opcional)";
+  acc.appendChild(ol);
+  var oi = document.createElement("input"); oi.type = "text"; oi.className = "mini-in"; oi.id = "sub-obs-"+r.folio; oi.placeholder = "Instrucciones al coordinador..."; oi.style.marginBottom = "10px";
+  acc.appendChild(oi);
+  var br = document.createElement("div"); br.style.cssText = "display:flex;gap:8px;";
+  var ba = document.createElement("button"); ba.className = "btn btn-apro btn-sm"; ba.textContent = "Aprobar";
+  ba.onclick = function(){ aprobar(r.folio, r.fila); };
+  var brch = document.createElement("button"); brch.className = "btn btn-cerr btn-sm"; brch.textContent = "Rechazar";
+  brch.onclick = function(){ var rw=document.getElementById("rech-"+r.folio); rw.style.display=rw.style.display==="block"?"none":"block"; };
+  br.appendChild(ba); br.appendChild(brch); acc.appendChild(br);
+  var rw = document.createElement("div"); rw.id = "rech-"+r.folio; rw.className = "rech-wrap";
+  var rta = document.createElement("textarea"); rta.className = "rech-ta"; rta.id = "txt-rech-"+r.folio; rta.placeholder = "Motivo del rechazo (obligatorio)..."; rta.rows = 2;
+  var rcb = document.createElement("button"); rcb.className = "btn-conf-rech"; rcb.textContent = "Confirmar rechazo";
+  rcb.onclick = function(){ rechazar(r.folio, r.fila); };
+  rw.appendChild(rta); rw.appendChild(rcb); acc.appendChild(rw);
+  bod.appendChild(acc); card.appendChild(bod);
+  return card;
+}
+function aprobar(folio, fila){
+  var est = subEstSel[folio];
+  if(!est){ document.getElementById("sub-est-err-"+folio).style.display="block"; alerta("Selecciona el estatus operativo","danger"); return; }
+  var obs = document.getElementById("sub-obs-"+folio).value.trim();
+  var sub = document.getElementById("sub-sel").value;
+  if(!sub){ alerta("Selecciona tu nombre primero","danger"); return; }
+  apiFetch({action:"actualizar", fila:fila, folio:folio, estado:"APROBADO", usuario:sub, role:"subgerente", estatusOpSub:est, obsSub:obs},
+    function(){ alerta("Aprobado correctamente - Coordinador notificado","success"); delete subEstSel[folio]; cargarSub(); setTimeout(function(){ goTab("coord"); },1000); });
+}
+function rechazar(folio, fila){
+  var mot = document.getElementById("txt-rech-"+folio).value.trim();
+  if(!mot){ alerta("Escribe el motivo del rechazo","danger"); return; }
+  var sub = document.getElementById("sub-sel").value;
+  apiFetch({action:"actualizar", fila:fila, folio:folio, estado:"RECHAZADO", usuario:sub, role:"subgerente", motivoRechazo:mot},
+    function(){ alerta("Rechazado - Supervisor notificado","warning"); cargarSub(); });
+}
+
+// --- COORDINADOR ---
+function cargarCoord(){
+  apiFetch({action:"obtener", filtros:{estado:"APROBADO"}}, function(res){
+    var apro = (res.datos||[]).filter(function(r){ return r.estado==="APROBADO"; });
+    renderCoord(apro);
+    var all = res.todos || res.datos || [];
+    document.getElementById("cs-a").textContent = apro.length;
+    document.getElementById("cs-c").textContent = all.filter(function(r){ return r.estado==="ASIGNADO"; }).length;
+    document.getElementById("cs-r").textContent = all.filter(function(r){ return r.cierreEstado==="reprogramar"; }).length;
+    document.getElementById("cs-x").textContent = all.filter(function(r){ return r.estado==="CERRADO"; }).length;
+    updateBadges(all);
+  });
+}
+function renderCoord(data){
+  var c = document.getElementById("coord-cards"); c.innerHTML = "";
+  if(!data.length){ c.innerHTML = "<div class=\"empty\"><div class=\"empty-i\">Ok<" + "/div><div class=\"empty-m\">Sin fallas aprobadas por asignar<" + "/div><" + "/div>"; return; }
+  data.forEach(function(r){ c.appendChild(buildCoordCard(r)); });
+}
+function buildCoordCard(r){
+  var card = document.createElement("div"); card.className = "fc";
+  var hdr = document.createElement("div"); hdr.className = "fc-h";
+  hdr.onclick = function(){ document.getElementById("cfcb-"+r.folio).classList.toggle("on"); };
+  var fol = document.createElement("div"); fol.className = "fc-folio"; fol.textContent = r.folio;
+  var inf = document.createElement("div"); inf.className = "fc-info";
+  var tit = document.createElement("div"); tit.className = "fc-title"; tit.textContent = r.unidad + " - " + r.terminal;
+  var met = document.createElement("div"); met.className = "fc-meta"; met.textContent = r.fecha + " | " + r.supervisor + (r.estatusOpSub?" | Sub: "+r.estatusOpSub:"");
+  inf.appendChild(tit); inf.appendChild(met);
+  var sb = document.createElement("span"); sb.className = "sb sb-apro"; sb.textContent = "Aprobado";
+  hdr.appendChild(fol); hdr.appendChild(inf); hdr.appendChild(sb); card.appendChild(hdr);
+  var bod = document.createElement("div"); bod.className = "fc-b"; bod.id = "cfcb-"+r.folio;
+  if(r.estatusOpSub){
+    var ctx = document.createElement("div"); ctx.style.cssText = "background:#fff3cd;border:1px solid #ffe69c;border-radius:3px;padding:8px 11px;margin:10px 0;font-size:11px;color:#856404;";
+    ctx.textContent = "Subgerente definio: " + r.estatusOpSub + (r.obsSub?" - "+r.obsSub:"");
+    bod.appendChild(ctx);
+  }
+  var acc = document.createElement("div"); acc.className = "acc acc-coord"; acc.style.marginTop = "10px";
+  var at = document.createElement("div"); at.className = "acc-title"; at.textContent = "Confirmacion FUO - Coordinador";
+  acc.appendChild(at);
+  if(!estSel[r.folio]) estSel[r.folio] = {};
+  var fallasList = r.fallas || [{grupo:r.tipoFalla||"Falla",subfallas:[r.notas||""],obs:""}];
+  fallasList.forEach(function(f, i){
+    var fb = document.createElement("div"); fb.className = "falla-box";
+    var fh = document.createElement("div"); fh.className = "falla-box-hdr";
+    var fn = document.createElement("span"); fn.className = "falla-box-num"; fn.textContent = "F"+(i<9?"0":"")+(i+1);
+    var ft = document.createElement("span"); ft.className = "falla-box-name"; ft.textContent = f.grupo;
+    fh.appendChild(fn); fh.appendChild(ft); fb.appendChild(fh);
+    var fd = document.createElement("div"); fd.className = "falla-box-desc"; fd.textContent = (f.subfallas||[]).join(" / ");
+    fb.appendChild(fd);
+    var mg = document.createElement("div"); mg.className = "mini-grid";
+    // Proveedor
+    var pc = document.createElement("div");
+    var pl = document.createElement("label"); pl.className = "mini-lbl"; pl.textContent = "Proveedor *";
+    var ps = document.createElement("select"); ps.className = "mini-sel"; ps.id = "cprov-"+r.folio+"-"+i;
+    var po = document.createElement("option"); po.value=""; po.textContent="-- Seleccionar --"; ps.appendChild(po);
+    PROVS.forEach(function(p){ var op=document.createElement("option");op.value=p;op.textContent=p;ps.appendChild(op); });
+    ps.onchange = function(){ chkCoord(r.folio, fallasList.length); };
+    pc.appendChild(pl); pc.appendChild(ps);
+    // Estatus
+    var ec = document.createElement("div");
+    var el2 = document.createElement("label"); el2.className = "mini-lbl"; el2.textContent = "Estatus operativo *";
+    var er = document.createElement("div"); er.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;";
+    ["Operando","Falla administrada","Fuera de Operacion"].forEach(function(ev){
+      var eb = document.createElement("button");
+      eb.style.cssText = "border:1px solid #ced4da;border-radius:3px;padding:5px 8px;font-size:10px;font-weight:700;color:#6c757d;cursor:pointer;background:white;font-family:inherit;";
+      eb.textContent = ev === "Falla administrada" ? "Falla adm." : ev;
+      eb.onclick = function(){
+        er.querySelectorAll("button").forEach(function(b){ b.style.borderColor="#ced4da";b.style.color="#6c757d";b.style.background="white"; });
+        var col = ev==="Operando"?"#27ae60":ev==="Fuera de Operacion"?"#dc3545":"#ffc107";
+        var bg = ev==="Operando"?"#d4edda":ev==="Fuera de Operacion"?"#f8d7da":"#fff3cd";
+        eb.style.borderColor=col; eb.style.color=col; eb.style.background=bg;
+        if(!estSel[r.folio]) estSel[r.folio]={};
+        estSel[r.folio][i] = ev;
+        var eck = document.getElementById("chk-est-"+r.folio+"-"+i);
+        if(eck){ eck.className="mck ok"; eck.textContent="Estatus OK"; }
+        chkCoord(r.folio, fallasList.length);
+      };
+      er.appendChild(eb);
+    });
+    ec.appendChild(el2); ec.appendChild(er);
+    mg.appendChild(pc); mg.appendChild(ec); fb.appendChild(mg);
+    var mc = document.createElement("div"); mc.className = "mini-chk";
+    var mkp = document.createElement("span"); mkp.id="chk-prov-"+r.folio+"-"+i; mkp.className="mck"; mkp.textContent="Sin proveedor";
+    var mke = document.createElement("span"); mke.id="chk-est-"+r.folio+"-"+i; mke.className="mck"; mke.textContent="Sin estatus";
+    mc.appendChild(mkp); mc.appendChild(mke); fb.appendChild(mc);
+    // Obs
+    var ol2 = document.createElement("label"); ol2.className="mini-lbl"; ol2.style.marginTop="6px"; ol2.textContent="Observaciones";
+    var oi2 = document.createElement("input"); oi2.type="text"; oi2.className="mini-in"; oi2.id="cobs-"+r.folio+"-"+i; oi2.placeholder="Cita, instrucciones..."; oi2.style.marginTop="4px";
+    fb.appendChild(ol2); fb.appendChild(oi2);
+    acc.appendChild(fb);
+  });
+  // Checklist
+  var chk = document.createElement("div"); chk.className = "chklist";
+  var c1 = document.createElement("div"); c1.className = "chi done"; c1.textContent = "FUO actualizado manualmente";
+  var c2 = document.createElement("div"); c2.className = "chi"; c2.id = "chki-todas-"+r.folio; c2.textContent = "Todas las fallas con proveedor y estatus";
+  chk.appendChild(c1); chk.appendChild(c2); acc.appendChild(chk);
+  var breg = document.createElement("button"); breg.className = "btn btn-primary"; breg.id = "breg-"+r.folio;
+  breg.disabled = true; breg.textContent = "Completa todos los campos para confirmar";
+  breg.onclick = function(){ confirmarCoord(r.folio, r.fila, fallasList.length); };
+  acc.appendChild(breg); bod.appendChild(acc); card.appendChild(bod);
+  return card;
+}
+function chkCoord(folio, n){
+  var ok = true;
+  for(var i=0;i<n;i++){
+    var pv = document.getElementById("cprov-"+folio+"-"+i);
+    var pval = pv ? pv.value : "";
+    var ev = estSel[folio] ? estSel[folio][i] : "";
+    var cp = document.getElementById("chk-prov-"+folio+"-"+i);
+    if(cp){ cp.className="mck"+(pval?" ok":""); cp.textContent=pval?"Proveedor OK":"Sin proveedor"; }
+    if(!pval||!ev) ok=false;
+  }
+  var ct = document.getElementById("chki-todas-"+folio);
+  if(ct){ ct.className="chi"+(ok?" done":""); ct.textContent="Todas las fallas con proveedor y estatus"; }
+  var btn = document.getElementById("breg-"+folio);
+  if(!btn) return;
+  btn.disabled = !ok;
+  btn.textContent = ok ? "Confirmar - Notificar a Gerencias" : "Completa todos los campos para confirmar";
+}
+function confirmarCoord(folio, fila, n){
+  var coord = document.getElementById("coord-sel").value;
+  if(!coord){ alerta("Selecciona tu nombre primero","danger"); return; }
+  var fallasDatos = [];
+  var ok = true;
+  for(var i=0;i<n;i++){
+    var pv = document.getElementById("cprov-"+folio+"-"+i);
+    var pval = pv ? pv.value : "";
+    var ev = estSel[folio] ? estSel[folio][i] : "";
+    if(!pval||!ev){ ok=false; break; }
+    var obs = document.getElementById("cobs-"+folio+"-"+i);
+    fallasDatos.push({idx:i, proveedor:pval, estatusOp:ev, obsCoord:obs?obs.value.trim():""});
+  }
+  if(!ok){ alerta("Asigna proveedor y estatus a todas las fallas","danger"); return; }
+  apiFetch({action:"actualizar", fila:fila, folio:folio, estado:"ASIGNADO", usuario:coord, role:"coordinador", fallasDatos:fallasDatos},
+    function(res){ alerta("Confirmado - Gerencias notificadas","success"); delete estSel[folio]; cargarCoord(); setTimeout(function(){ goTab("ger"); },900); });
+}
+
+// --- GERENCIAS ---
+var DB_GER = [];
+function cargarGer(){
+  apiFetch({action:"obtener", filtros:{}}, function(res){
+    DB_GER = res.todos || res.datos || [];
+    document.getElementById("g-t").textContent = DB_GER.length;
+    document.getElementById("g-p").textContent = DB_GER.filter(function(r){ return r.estado==="REPORTADO"; }).length;
+    document.getElementById("g-a").textContent = DB_GER.filter(function(r){ return r.estado==="APROBADO"; }).length;
+    document.getElementById("g-c").textContent = DB_GER.filter(function(r){ return r.estado==="ASIGNADO"; }).length;
+    document.getElementById("g-x").textContent = DB_GER.filter(function(r){ return r.estado==="CERRADO"; }).length;
+    document.getElementById("g-tot").textContent = DB_GER.length;
+    filtrar();
+    // WA log
+    var wl = document.getElementById("wa-log"); wl.innerHTML = "";
+    if(res.waLog && res.waLog.length){
+      res.waLog.forEach(function(w){
+        var d = document.createElement("div"); d.className = "wa-item";
+        var t = document.createElement("div"); t.className = "wa-time"; t.textContent = w.hora;
+        var m = document.createElement("div"); m.textContent = w.mensaje;
+        d.appendChild(t); d.appendChild(m); wl.appendChild(d);
+      });
+    } else {
+      wl.innerHTML = "<div style=\"color:#adb5bd;font-size:12px;padding:8px;\">Sin notificaciones aun<" + "/div>";
+    }
+    updateBadges(DB_GER);
+  });
+}
+function filtrar(){
+  var fu = (document.getElementById("fi-u").value||"").toLowerCase();
+  var ft = document.getElementById("fi-t").value||"";
+  var fe = document.getElementById("fi-e").value||"";
+  var res = DB_GER.filter(function(r){
+    if(fu && r.unidad.toLowerCase().indexOf(fu)<0) return false;
+    if(ft && r.terminal!==ft) return false;
+    if(fe && r.estado!==fe) return false;
+    return true;
+  });
+  document.getElementById("g-cnt").textContent = res.length;
+  var sb = {"REPORTADO":"sb-rep","APROBADO":"sb-apro","ASIGNADO":"sb-asig","CERRADO":"sb-cerr","RECHAZADO":"sb-rech"};
+  var tbody = document.getElementById("ger-tbody"); tbody.innerHTML = "";
+  res.forEach(function(r){
+    var tr = document.createElement("tr");
+    var fallasList = r.fallas||[{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
+    var fallasStr = fallasList.map(function(f){ return f.grupo+(f.proveedor?" -> "+f.proveedor:""); }).join(" | ");
+    var provStr = fallasList.filter(function(f){ return f.proveedor; }).map(function(f){ return f.proveedor; }).join(" / ")||r.proveedor||"-";
+    var estStr = fallasList.filter(function(f){ return f.estatusOp; }).map(function(f){ return f.estatusOp; }).join(" / ")||r.estatusOp||"-";
+    [r.folio,r.unidad,r.terminal,r.mtto||"-",r.supervisor,fallasStr,provStr,estStr].forEach(function(val,i){
+      var td = document.createElement("td"); td.textContent = val; tr.appendChild(td);
+    });
+    var tdst = document.createElement("td");
+    var sp = document.createElement("span"); sp.className="sb "+(sb[r.estado]||""); sp.textContent=r.estado;
+    tdst.appendChild(sp); tr.appendChild(tdst);
+    tbody.appendChild(tr);
+  });
+}
+function limpiarFilt(){ document.getElementById("fi-u").value=""; document.getElementById("fi-t").value=""; document.getElementById("fi-e").value=""; filtrar(); }
+function exportar(){
+  if(!DB_GER.length){ alerta("Sin datos para exportar","warning"); return; }
+  var rows = ['"Folio","Unidad","Terminal","Supervisor","Tipo","Estado","Proveedor","EstatusOp"'];
+  DB_GER.forEach(function(r){
+    rows.push([r.folio,r.unidad,r.terminal,r.supervisor,r.mtto||"",r.estado,r.proveedor||"",r.estatusOp||""].map(function(v){ return "\""+String(v).replace(/"/g,"\"\"")+"\""; }).join(","));
+  });
+  var blob = new Blob([String.fromCharCode(65279)+rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a"); a.href=url; a.download="Fallas_III_Servicios.csv"; a.click();
+  URL.revokeObjectURL(url);
+  alerta("CSV exportado","success");
+}
+
+// --- CIERRE ---
+function cargarCierre(){
+  var sup = document.getElementById("cierre-sup-sel").value;
+  if(!sup) return;
+  apiFetch({action:"obtener", filtros:{estado:"ASIGNADO", supervisor:sup}}, function(res){
+    var asig = (res.datos||[]).filter(function(r){ return r.estado==="ASIGNADO"; });
+    document.getElementById("ci-t").textContent = asig.length;
+    document.getElementById("ci-o").textContent = asig.filter(function(r){ return r.cierreEstado==="atendida"; }).length;
+    document.getElementById("ci-p").textContent = asig.filter(function(r){ return r.cierreEstado==="pendiente"; }).length;
+    document.getElementById("ci-r").textContent = asig.filter(function(r){ return r.cierreEstado==="reprogramar"; }).length;
+    renderCierre(asig);
+    updateBadges(res.todos||asig);
+  });
+}
+function renderCierre(data){
+  var c = document.getElementById("cierre-cards"); c.innerHTML = "";
+  if(!data.length){ c.innerHTML="<div class=\"empty\"><div class=\"empty-i\">Ok<" + "/div><div class=\"empty-m\">No hay fallas asignadas aun<" + "/div><" + "/div>";
+    document.getElementById("btn-cierre-enviar").disabled=true; return; }
+  data.forEach(function(r){ c.appendChild(buildCierreCard(r)); });
+  checkCierreBtn(data);
+}
+function buildCierreCard(r){
+  var card = document.createElement("div"); card.className="fc";
+  var hdr = document.createElement("div"); hdr.className="fc-h";
+  hdr.onclick = function(){ document.getElementById("cifcb-"+r.folio).classList.toggle("on"); };
+  var fol = document.createElement("div"); fol.className="fc-folio"; fol.textContent=r.folio;
+  var inf = document.createElement("div"); inf.className="fc-info";
+  var tit = document.createElement("div"); tit.className="fc-title"; tit.textContent=r.unidad+" - "+r.terminal;
+  var met = document.createElement("div"); met.className="fc-meta"; met.textContent=(r.proveedor||"-")+" | "+(r.estatusOp||"-");
+  inf.appendChild(tit); inf.appendChild(met);
+  var est = cierreSel[r.folio]||"sin";
+  var sbcls = {sin:"sb-rep",atendida:"sb-apro",pendiente:"sb-asig",reprogramar:"sb-rech"};
+  var sblbl = {sin:"Sin marcar",atendida:"Concluida",pendiente:"Pendiente",reprogramar:"Reprogramar"};
+  var sb = document.createElement("span"); sb.className="sb "+(sbcls[est]); sb.id="ci-tag-"+r.folio; sb.textContent=sblbl[est];
+  hdr.appendChild(fol); hdr.appendChild(inf); hdr.appendChild(sb); card.appendChild(hdr);
+  var bod = document.createElement("div"); bod.className="fc-b"; bod.id="cifcb-"+r.folio;
+  var fi = document.createElement("div"); fi.className="fi"; fi.style.marginTop="10px";
+  var fallasList = r.fallas||[{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
+  fallasList.forEach(function(f){ var it=document.createElement("div");it.className="fi-item";var g=document.createElement("div");g.className="fi-g";g.textContent=f.grupo;var d=document.createElement("div");d.className="fi-d";d.textContent=(f.subfallas||[]).join(" / ");it.appendChild(g);it.appendChild(d);fi.appendChild(it); });
+  bod.appendChild(fi);
+  var acc = document.createElement("div"); acc.className="acc acc-cierre";
+  var at = document.createElement("div"); at.className="acc-title"; at.textContent="Resultado de atencion";
+  acc.appendChild(at);
+  var crow = document.createElement("div"); crow.className="co-row";
+  [["Concluida","atendida"],["Pendiente","pendiente"],["Reprogramar","reprogramar"]].forEach(function(opt){
+    var cb = document.createElement("button"); cb.className="co"+(est===opt[1]?" "+(opt[1]==="atendida"?"ok":opt[1]==="pendiente"?"pend":"rep"):"");
+    cb.innerHTML="<span class=\"ci\">"+opt[0][0]+"<" + "/span><span class=\"cl\">"+opt[0]+"<" + "/span>";
+    cb.onclick = (function(e, btn){ return function(){ setCierre(r.folio, e, crow, btn); }; })(opt[1], cb);
+    crow.appendChild(cb);
+  });
+  acc.appendChild(crow);
+  var xf = document.createElement("div"); xf.id="xf-"+r.folio; xf.className="xf"+(est!=="atendida"&&est!=="sin"?" on":"");
+  var ms = document.createElement("select"); ms.className="mini-sel"; ms.id="ci-mot-"+r.folio;
+  ["-- Motivo --","En espera de refaccion","Proveedor no se presento","Unidad en operacion urgente","Taller sin disponibilidad","Otro"].forEach(function(op){ var o=document.createElement("option");o.textContent=op;ms.appendChild(o); });
+  xf.appendChild(ms); acc.appendChild(xf);
+  bod.appendChild(acc); card.appendChild(bod);
+  return card;
+}
+function setCierre(folio, estado, crow, btn){
+  cierreSel[folio] = estado;
+  var allCards = Object.keys(cierreSel).map(function(f){ return {folio:f,estado:cierreSel[f]}; });
+  crow.querySelectorAll(".co").forEach(function(b){ b.className="co"; });
+  btn.className = "co " + (estado==="atendida"?"ok":estado==="pendiente"?"pend":"rep");
+  var tag = document.getElementById("ci-tag-"+folio);
+  var sbcls = {atendida:"sb sb-apro",pendiente:"sb sb-asig",reprogramar:"sb sb-rech"};
+  var sblbl = {atendida:"Concluida",pendiente:"Pendiente",reprogramar:"Reprogramar"};
+  if(tag){ tag.className=sbcls[estado]; tag.textContent=sblbl[estado]; }
+  var xf = document.getElementById("xf-"+folio);
+  if(xf) xf.className = "xf" + (estado!=="atendida"?" on":"");
+  // Update mini stats
+  var totalAsig = Object.keys(cierreSel).length;
+  document.getElementById("ci-o").textContent = Object.values(cierreSel).filter(function(e){ return e==="atendida"; }).length;
+  document.getElementById("ci-p").textContent = Object.values(cierreSel).filter(function(e){ return e==="pendiente"; }).length;
+  document.getElementById("ci-r").textContent = Object.values(cierreSel).filter(function(e){ return e==="reprogramar"; }).length;
+  checkCierreBtn(null);
+}
+function checkCierreBtn(data){
+  var total = data ? data.length : parseInt(document.getElementById("ci-t").textContent)||0;
+  var marcadas = Object.keys(cierreSel).length;
+  document.getElementById("btn-cierre-enviar").disabled = total===0||marcadas<total;
+}
+function enviarCierre(){
+  var sup = document.getElementById("cierre-sup-sel").value;
+  if(!sup){ alerta("Selecciona tu nombre","danger"); return; }
+  var cierreData = Object.keys(cierreSel).map(function(f){ return {folio:f, estado:cierreSel[f]}; });
+  apiFetch({action:"cerrar-dia", payload:{supervisor:sup, cierres:cierreData}},
+    function(res){ alerta("Cierre enviado correctamente","success"); cierreSel={}; cargarCierre(); setTimeout(function(){ goTab("ger"); },1000); });
+}
+
+// --- HISTORIAL ---
+function cargarHistorial(){
+  apiFetch({action:"obtener", filtros:{historial:true}}, function(res){
+    var todos = res.todos||res.datos||[];
+    var tbody = document.getElementById("hist-tbody"); tbody.innerHTML="";
+    var sb = {"REPORTADO":"sb-rep","APROBADO":"sb-apro","ASIGNADO":"sb-asig","CERRADO":"sb-cerr","RECHAZADO":"sb-rech"};
+    todos.forEach(function(r){
+      var tr = document.createElement("tr");
+      var fl = r.fallas||[{grupo:r.tipoFalla||""}];
+      [r.folio,r.fecha,r.unidad,r.terminal,r.supervisor,r.mtto||"-",fl.map(function(f){return f.grupo;}).join(" / "),r.aprobadoPor||"-",r.proveedor||"-",r.estatusOp||"-"].forEach(function(val){
+        var td=document.createElement("td");td.textContent=val;tr.appendChild(td);
+      });
+      var tdst=document.createElement("td"); var sp=document.createElement("span"); sp.className="sb "+(sb[r.estado]||""); sp.textContent=r.estado; tdst.appendChild(sp); tr.appendChild(tdst);
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// --- BADGES ---
+function updateBadges(all){
+  if(!all) return;
+  document.getElementById("b-sub").textContent = all.filter(function(r){ return r.estado==="REPORTADO"; }).length;
+  document.getElementById("b-coord").textContent = all.filter(function(r){ return r.estado==="APROBADO"; }).length;
+  document.getElementById("b-cierre").textContent = all.filter(function(r){ return r.estado==="ASIGNADO"; }).length;
+  document.getElementById("b-ger").textContent = all.length;
+}
+
+// AUTO-REFRESH cada 60 seg cuando el tab de subgerente o coordinador esta activo
+setInterval(function(){
+  var activeTab = document.querySelector(".nav-tab.active");
+  if(!activeTab) return;
+  var t = activeTab.id.replace("tab-","");
+  if(t==="sub") cargarSub();
+  if(t==="coord") cargarCoord();
+  if(t==="ger") cargarGer();
+},60000);
+</script>
+</body>
+</html>
