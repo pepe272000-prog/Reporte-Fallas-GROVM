@@ -630,6 +630,18 @@ var DEMO_DB = [];
 
 function toArray(v){ return Array.isArray(v) ? v : (v && typeof v === "object" && !Array.isArray(v) ? Object.values(v) : []); }
 
+function flattenPayload(obj){
+  var result = {};
+  for(var key in obj){
+    if(typeof obj[key] === "object" && obj[key] !== null){
+      result[key] = JSON.stringify(obj[key]);
+    } else {
+      result[key] = obj[key];
+    }
+  }
+  return result;
+}
+
 function apiFetch(payload, onOk, onErr){
   // DEMO MODE — responde localmente sin llamar al backend
   if(DEMO_MODE){
@@ -643,7 +655,7 @@ function apiFetch(payload, onOk, onErr){
     return;
   }
   loader(true);
-  fetch(WEBHOOK, {method:"POST", body:JSON.stringify(payload)})
+  fetch(WEBHOOK, {method:"POST", body:new URLSearchParams(flattenPayload(payload))})
     .then(function(r){ return r.json(); })
     .then(function(res){
       loader(false);
