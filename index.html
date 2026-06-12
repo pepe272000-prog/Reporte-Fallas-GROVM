@@ -1,526 +1,1499 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>III Servicios - Sistema de Gestión de Fallas PMX/TIS</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>III-Servicios | Sistema de Fallas PMX</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#f5f7fa 0%,#c3cfe2 100%);color:#2c3e50;min-height:100vh;}
+.container{max-width:1400px;margin:0 auto;background:white;border-radius:8px;box-shadow:0 4px 20px rgba(0,0,0,0.1);overflow:hidden;}
+.header{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;padding:20px 30px;display:flex;align-items:center;justify-content:space-between;}
+.header h1{font-size:22px;}
+.header p{font-size:12px;opacity:.85;margin-top:3px;}
+.hdr-fecha{font-size:12px;opacity:.8;text-align:right;}
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-        }
+/* NAV TABS */
+.nav-tabs{display:flex;border-bottom:2px solid #e9ecef;background:#f8f9fa;overflow-x:auto;}
+.nav-tab{padding:12px 20px;font-size:12px;font-weight:600;color:#6c757d;cursor:pointer;border:none;background:transparent;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;}
+.nav-tab:hover{color:#667eea;}
+.nav-tab.active{color:#667eea;border-bottom-color:#667eea;background:white;}
+.badge{background:#dc3545;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;}
+.badge.green{background:#27ae60;}
+.badge.blue{background:#2980b9;}
 
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 30px 20px;
-            text-align: center;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
+/* VIEWS */
+.view{display:none;padding:24px;}
+.view.active{display:block;}
 
-        .header h1 {
-            font-size: 28px;
-            margin-bottom: 5px;
-        }
+/* ALERT */
+#alert-container{position:fixed;top:16px;right:16px;z-index:9999;display:flex;flex-direction:column;gap:8px;}
+.alert{padding:12px 18px;border-radius:6px;font-size:13px;box-shadow:0 2px 12px rgba(0,0,0,.15);min-width:260px;max-width:360px;animation:slideIn .3s ease;}
+@keyframes slideIn{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+.alert-success{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+.alert-danger{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
+.alert-info{background:#d1ecf1;color:#0c5460;border:1px solid #bee5eb;}
+.alert-warning{background:#fff3cd;color:#856404;border:1px solid #ffeeba;}
 
-        .header p {
-            font-size: 14px;
-            opacity: 0.9;
-        }
+/* LOADER */
+.loader-overlay{display:none;position:fixed;inset:0;background:rgba(255,255,255,.7);z-index:8888;align-items:center;justify-content:center;flex-direction:column;gap:12px;}
+.loader-overlay.on{display:flex;}
+.spinner{width:40px;height:40px;border:4px solid #e9ecef;border-top-color:#667eea;border-radius:50%;animation:spin .8s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg)}}
 
-        .demo-toggle {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            padding: 10px 15px;
-            border-radius: 5px;
-            cursor: pointer;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-            font-size: 12px;
-            font-weight: bold;
-            z-index: 1000;
-        }
+/* FORM LAYOUT */
+.form-grid{display:grid;grid-template-columns:340px 1fr;gap:24px;}
+@media(max-width:900px){.form-grid{grid-template-columns:1fr;}}
+.left-col{background:#f8f9fa;border-radius:8px;padding:20px;}
+.right-col{}
 
-        .demo-toggle.active {
-            background: #4caf50;
-            color: white;
-        }
+/* USUARIO SECTION */
+.user-section{margin-bottom:18px;}
+.user-label{font-size:11px;color:#667eea;font-weight:700;text-transform:uppercase;margin-bottom:6px;letter-spacing:.5px;}
+select.user-sel,select.fld-sel,input.fld-in,textarea.fld-ta{width:100%;padding:9px 10px;border:1px solid #ced4da;border-radius:4px;font-size:13px;font-family:inherit;background:white;outline:none;transition:border-color .2s;}
+select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:focus{border-color:#667eea;box-shadow:0 0 0 2px rgba(102,126,234,.15);}
+.fld-ta{resize:vertical;min-height:60px;}
 
-        .nav-tabs {
-            display: flex;
-            background: white;
-            border-bottom: 2px solid #ddd;
-            padding: 0 20px;
-            gap: 0;
-        }
+/* PREFIX TOGGLE */
+.pfx-wrap{display:flex;}
+.pfx-btn{padding:9px 14px;font-size:12px;font-weight:700;border:1px solid #ced4da;background:white;cursor:pointer;transition:all .15s;letter-spacing:.5px;}
+.pfx-btn:first-child{border-radius:4px 0 0 4px;}
+.pfx-btn:last-child{border-radius:0 4px 4px 0;border-left:none;}
+.pfx-btn.pmx{background:#fff3cd;color:#856404;border-color:#f0c040;}
+.pfx-btn.tis{background:#cfe2ff;color:#084298;border-color:#9ec5fe;}
+.pfx-num{border-radius:0 4px 4px 0!important;border-left:none!important;flex:1;}
 
-        .nav-tabs button {
-            background: none;
-            border: none;
-            padding: 15px 25px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 500;
-            color: #666;
-            position: relative;
-            transition: all 0.3s;
-        }
+/* MTTO CHIPS */
+.mtto-row{display:flex;gap:8px;}
+.mc{flex:1;border:2px solid #ced4da;border-radius:6px;padding:10px 8px;text-align:center;cursor:pointer;background:white;transition:all .15s;}
+.mc .mi{font-size:18px;display:block;margin-bottom:3px;}
+.mc .ml{font-size:11px;font-weight:700;color:#6c757d;display:block;}
+.mc.prev{border-color:#27ae60;background:#d4edda;}
+.mc.prev .ml{color:#155724;}
+.mc.corr{border-color:#dc3545;background:#f8d7da;}
+.mc.corr .ml{color:#721c24;}
 
-        .nav-tabs button:hover {
-            color: #667eea;
-        }
+/* GRUPO GRID */
+.gg{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:6px;}
+.gc{border:1px solid #ced4da;border-radius:4px;padding:9px;cursor:pointer;background:white;transition:all .12s;}
+.gc:hover{border-color:#667eea;background:#f0f1ff;}
+.gc.on{border-color:#667eea;background:#eef0ff;}
+.gc-name{font-size:11px;font-weight:600;color:#2c3e50;line-height:1.3;margin-bottom:2px;}
+.gc.on .gc-name{color:#667eea;}
+.gc-cnt{font-size:10px;color:#adb5bd;}
 
-        .nav-tabs button.active {
-            color: #667eea;
-            border-bottom: 3px solid #667eea;
-        }
+/* SUBFALLA */
+.sfg{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:5px;}
+.sfc{border:1px solid #ced4da;border-radius:3px;padding:7px 10px;font-size:11px;color:#495057;cursor:pointer;background:white;line-height:1.4;transition:all .12s;position:relative;}
+.sfc:hover{border-color:#667eea;}
+.sfc.on{border-color:#667eea;background:#eef0ff;color:#667eea;font-weight:600;padding-right:18px;}
+.sfc.on::after{content:"OK";position:absolute;top:5px;right:6px;font-size:9px;}
+.sgg .gc{border-color:#ced4da;}
+.sgg .gc.on{border-color:#764ba2;background:#f5f0ff;}
+.sgg .gc.on .gc-name{color:#764ba2;}
+#panel-libre{display:block;}
 
-        .tab-content {
-            display: none;
-            padding: 30px;
-            background: white;
-            min-height: 500px;
-        }
+/* REGISTROS */
+.rl{display:flex;flex-direction:column;gap:5px;margin-top:10px;}
+.ri{background:#f8f9fa;border:1px solid #e9ecef;border-radius:4px;padding:9px 12px;display:flex;align-items:flex-start;gap:9px;}
+.ri-num{font-size:10px;color:#667eea;background:#eef0ff;border:1px solid #c7d2fa;padding:2px 6px;border-radius:2px;flex-shrink:0;margin-top:1px;}
+.ri-info{flex:1;}
+.ri-g{font-size:11px;font-weight:700;color:#667eea;margin-bottom:1px;}
+.ri-d{font-size:11px;color:#6c757d;line-height:1.4;}
+.ri-del{background:transparent;border:none;color:#adb5bd;cursor:pointer;font-size:15px;padding:0 3px;}
+.ri-del:hover{color:#dc3545;}
 
-        .tab-content.active {
-            display: block;
-        }
+/* BUTTONS */
+.btn{padding:10px 18px;border:none;border-radius:4px;font-size:12px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;transition:all .2s;}
+.btn-primary{background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;width:100%;padding:12px;}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 4px 12px rgba(102,126,234,.4);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-sec{background:white;color:#6c757d;border:1px solid #ced4da;}
+.btn-sec:hover{background:#f8f9fa;}
+.btn-add{background:#e8f5e9;color:#27ae60;border:1px solid #a5d6a7;width:100%;}
+.btn-add:hover{background:#c8e6c9;}
+.btn-sm{padding:6px 12px;font-size:11px;}
+.btn-apro{background:#d4edda;color:#155724;border:1px solid #c3e6cb;}
+.btn-apro:hover{background:#c3e6cb;}
+.btn-conf{background:#cfe2ff;color:#084298;border:1px solid #9ec5fe;}
+.btn-conf:hover{background:#bdd5fc;}
+.btn-cerr{background:#f8d7da;color:#721c24;border:1px solid #f5c6cb;}
+.btn-cerr:hover{background:#f5c6cb;}
+.btn-repr{background:#fff3cd;color:#856404;border:1px solid #ffe69c;}
+.btn-repr:hover{background:#ffe69c;}
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-        }
+/* PROGRESS */
+.prog-steps{display:flex;align-items:center;margin-bottom:16px;}
+.ps{display:flex;align-items:center;gap:6px;font-size:11px;color:#adb5bd;}
+.ps.act{color:#667eea;font-weight:600;}
+.ps.done{color:#27ae60;}
+.pn{width:22px;height:22px;border-radius:50%;border:2px solid #ced4da;display:flex;align-items:center;justify-content:center;font-size:9px;background:white;flex-shrink:0;}
+.ps.act .pn{border-color:#667eea;color:#667eea;}
+.ps.done .pn{border-color:#27ae60;color:#27ae60;background:#d4edda;}
+.pl{flex:1;height:1px;background:#e9ecef;margin:0 6px;}
 
-        .form-group {
-            margin-bottom: 20px;
-        }
+/* SECTION TITLE */
+.sec-title{font-size:12px;font-weight:700;color:#667eea;text-transform:uppercase;letter-spacing:.5px;margin-bottom:12px;padding-bottom:6px;border-bottom:2px solid #eef0ff;}
 
-        label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
+/* PANEL STEPS */
+.panel{display:none;}
+.panel.on{display:block;}
 
-        input, select, textarea {
-            width: 100%;
-            padding: 12px;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            font-size: 14px;
-            font-family: inherit;
-        }
+/* FALLA CARDS (subgerente, coordinador, cierre) */
+.fcards{display:flex;flex-direction:column;gap:10px;}
+.fc{background:white;border:1px solid #e9ecef;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,.06);}
+.fc-h{padding:12px 14px;display:flex;align-items:flex-start;gap:10px;cursor:pointer;transition:background .15s;}
+.fc-h:hover{background:#f8f9fa;}
+.fc-folio{font-size:11px;color:#667eea;background:#eef0ff;border:1px solid #c7d2fa;padding:3px 7px;border-radius:3px;flex-shrink:0;margin-top:1px;font-weight:700;}
+.fc-info{flex:1;}
+.fc-title{font-size:13px;font-weight:700;color:#2c3e50;margin-bottom:3px;}
+.fc-meta{font-size:11px;color:#6c757d;display:flex;gap:12px;flex-wrap:wrap;}
+.fc-b{display:none;padding:0 14px 14px;border-top:1px solid #e9ecef;}
+.fc-b.on{display:block;}
+.fi{display:flex;flex-direction:column;gap:4px;margin:10px 0 12px;}
+.fi-item{background:#f8f9fa;border:1px solid #e9ecef;border-radius:3px;padding:7px 10px;}
+.fi-g{font-size:11px;font-weight:700;color:#667eea;margin-bottom:2px;}
+.fi-d{font-size:11px;color:#6c757d;line-height:1.4;}
 
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 5px rgba(102, 126, 234, 0.3);
-        }
+/* STATUS BADGES */
+.sb{padding:4px 8px;border-radius:3px;font-size:11px;font-weight:700;}
+.sb-rep{background:#fff3cd;color:#856404;}
+.sb-apro{background:#d4edda;color:#155724;}
+.sb-asig{background:#cfe2ff;color:#084298;}
+.sb-cerr{background:#d1e7dd;color:#0f5132;}
+.sb-rech{background:#f8d7da;color:#721c24;}
 
-        button {
-            background: #667eea;
-            color: white;
-            padding: 12px 30px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.3s;
-        }
+/* STATS */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;}
+@media(max-width:700px){.stats{grid-template-columns:repeat(3,1fr);}}
+.stat{background:white;border:1px solid #e9ecef;border-radius:6px;padding:14px;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.stat-n{font-size:28px;font-weight:700;margin-bottom:3px;}
+.stat-l{font-size:10px;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;}
+.sn-t .stat-n{color:#6c757d;}
+.sn-p .stat-n{color:#856404;}
+.sn-a .stat-n{color:#155724;}
+.sn-c .stat-n{color:#084298;}
+.sn-x .stat-n{color:#0f5132;}
 
-        button:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
+/* ACC BOXES */
+.acc{border-radius:5px;padding:14px;margin-top:12px;}
+.acc-sub{background:#f5f0ff;border:1px solid #d8b4fe;}
+.acc-coord{background:#eff6ff;border:1px solid #93c5fd;}
+.acc-cierre{background:#f0fdf4;border:1px solid #86efac;}
+.acc-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;}
+.acc-sub .acc-title{color:#7e22ce;}
+.acc-coord .acc-title{color:#1d4ed8;}
+.acc-cierre .acc-title{color:#15803d;}
 
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-        }
+/* EC CHIPS */
+.ec-big-row{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;}
+.ec-big{flex:1;min-width:90px;text-align:center;padding:10px 8px;border:2px solid #ced4da;border-radius:5px;cursor:pointer;background:white;transition:all .15s;}
+.ec-big .ebi{font-size:16px;display:block;margin-bottom:3px;}
+.ec-big .ebl{font-size:11px;font-weight:700;color:#6c757d;display:block;}
+.ec-big[data-v="Operando"].on{border-color:#27ae60;background:#d4edda;}
+.ec-big[data-v="Operando"].on .ebl{color:#155724;}
+.ec-big[data-v="Falla administrada"].on{border-color:#ffc107;background:#fff3cd;}
+.ec-big[data-v="Falla administrada"].on .ebl{color:#856404;}
+.ec-big[data-v="Fuera de Operacion"].on{border-color:#dc3545;background:#f8d7da;}
+.ec-big[data-v="Fuera de Operacion"].on .ebl{color:#721c24;}
 
-        .alert {
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
+/* CHKLIST */
+.chklist{background:white;border:1px solid #e9ecef;border-radius:4px;padding:10px 12px;margin:10px 0;font-size:12px;display:flex;flex-direction:column;gap:5px;}
+.chi{display:flex;align-items:center;gap:7px;color:#6c757d;}
+.chi.done{color:#27ae60;}
 
-        .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
+/* PROV FALLA BOX */
+.falla-box{background:#f8f9fa;border:1px solid #e9ecef;border-radius:5px;padding:12px;margin-bottom:8px;}
+.falla-box-hdr{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.falla-box-num{font-size:10px;color:#667eea;background:#eef0ff;border:1px solid #c7d2fa;padding:2px 7px;border-radius:2px;font-weight:700;}
+.falla-box-name{font-size:12px;font-weight:700;color:#2c3e50;}
+.falla-box-desc{font-size:11px;color:#6c757d;margin-bottom:8px;line-height:1.4;}
+.mini-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.mini-lbl{display:block;font-size:10px;font-weight:700;color:#6c757d;text-transform:uppercase;margin-bottom:4px;}
+.mini-sel{width:100%;background:white;border:1px solid #ced4da;color:#2c3e50;font-family:inherit;font-size:12px;padding:7px 9px;border-radius:3px;outline:none;appearance:none;cursor:pointer;}
+.mini-in{width:100%;background:white;border:1px solid #ced4da;color:#2c3e50;font-family:inherit;font-size:12px;padding:7px 9px;border-radius:3px;outline:none;}
+.mini-chk{display:flex;gap:8px;margin-top:4px;}
+.mck{font-size:10px;color:#adb5bd;}
+.mck.ok{color:#27ae60;}
 
-        .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
+/* CIERRE OPTS */
+.co-row{display:flex;gap:7px;margin-bottom:10px;}
+.co{flex:1;border:2px solid #ced4da;border-radius:4px;padding:10px;text-align:center;cursor:pointer;background:white;font-family:inherit;transition:all .15s;}
+.co .ci{font-size:18px;display:block;margin-bottom:3px;}
+.co .cl{font-size:11px;font-weight:700;color:#6c757d;display:block;}
+.co.ok{border-color:#27ae60;background:#d4edda;}
+.co.ok .cl{color:#155724;}
+.co.pend{border-color:#ffc107;background:#fff3cd;}
+.co.pend .cl{color:#856404;}
+.co.rep{border-color:#dc3545;background:#f8d7da;}
+.co.rep .cl{color:#721c24;}
+.xf{display:none;}
+.xf.on{display:block;margin-top:8px;}
 
-        .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
-        }
+/* RECH */
+.rech-wrap{display:none;margin-top:9px;}
+.rech-ta{width:100%;background:white;border:1px solid #f5c6cb;color:#2c3e50;font-family:inherit;font-size:12px;padding:8px;border-radius:3px;outline:none;resize:vertical;min-height:55px;}
+.btn-conf-rech{margin-top:6px;background:#dc3545;color:white;font-size:11px;font-weight:700;padding:7px 13px;border:none;border-radius:3px;cursor:pointer;}
 
-        .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
+/* TABLA GERENCIAS */
+.tbl{width:100%;border-collapse:collapse;font-size:12px;}
+.tbl th{background:#f8f9fa;font-size:11px;color:#6c757d;font-weight:700;padding:9px 10px;text-align:left;border-bottom:2px solid #e9ecef;text-transform:uppercase;letter-spacing:.3px;}
+.tbl td{padding:9px 10px;border-bottom:1px solid #f0f0f0;color:#495057;vertical-align:middle;}
+.tbl tr:hover td{background:#fafafa;}
+.tbl td:first-child{font-weight:700;color:#667eea;font-size:11px;}
 
-        .card {
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 8px;
-            padding: 20px;
-            margin-bottom: 20px;
-        }
+/* FILTROS */
+.filt-row{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:flex-end;}
+.filt-group{display:flex;flex-direction:column;gap:4px;flex:1;min-width:130px;}
+.filt-lbl{font-size:10px;font-weight:700;color:#6c757d;text-transform:uppercase;}
+.filt-in{padding:7px 9px;border:1px solid #ced4da;border-radius:4px;font-size:12px;background:white;outline:none;}
+.filt-cnt{font-size:11px;color:#6c757d;margin-top:6px;}
 
-        .card h3 {
-            margin-top: 0;
-            color: #667eea;
-        }
+/* WA LOG */
+.wa-log{display:flex;flex-direction:column;gap:5px;max-height:200px;overflow-y:auto;}
+.wa-item{padding:8px 10px;background:#f0fdf4;border-left:3px solid #27ae60;border-radius:3px;font-size:11px;color:#374151;}
+.wa-time{font-size:10px;color:#6c757d;margin-bottom:2px;}
 
-        .badge {
-            display: inline-block;
-            padding: 5px 10px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
-        }
+/* NOTA FUO */
+.nota-fuo{background:#fff3cd;border:1px solid #ffe69c;border-radius:4px;padding:10px 12px;font-size:12px;color:#856404;margin-bottom:12px;line-height:1.6;}
 
-        .badge-success {
-            background: #d4edda;
-            color: #155724;
-        }
+/* RESPONSIVE */
+@media(max-width:600px){.stats{grid-template-columns:repeat(2,1fr)}.mini-grid{grid-template-columns:1fr}}
 
-        .badge-warning {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .badge-danger {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .loading {
-            text-align: center;
-            padding: 40px;
-            color: #999;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        @media (max-width: 768px) {
-            .grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .nav-tabs {
-                overflow-x: auto;
-            }
-            
-            .header h1 {
-                font-size: 20px;
-            }
-        }
-    </style>
+/* EMPTY */
+.empty{text-align:center;padding:40px 20px;color:#adb5bd;}
+.empty-i{font-size:32px;margin-bottom:10px;}
+.empty-m{font-size:13px;}
+</style>
 </head>
 <body>
-    <div class="demo-toggle" id="demoToggle">MODO DEMO: OFF</div>
 
-    <div class="header">
-        <h1>Sistema de Fallas PMX / TIS — III Servicios</h1>
-        <p>Backend conectado a Google Sheets en tiempo real</p>
+<div id="alert-container"></div>
+<div class="loader-overlay" id="loader"><div class="spinner"></div><span style="font-size:12px;color:#667eea;font-weight:600;">Conectando con Google Sheets...</span></div>
+
+<div class="container">
+  <div class="header">
+    <div>
+      <h1>Sistema de Fallas PMX / TIS &mdash; III Servicios</h1>
+      <p>Backend conectado a Google Sheets en tiempo real</p>
     </div>
-
-    <div class="nav-tabs">
-        <button class="nav-btn active" data-tab="supervisor">SUPERVISOR ✓</button>
-        <button class="nav-btn" data-tab="subgerente">SUBGERENTE ⏳</button>
-        <button class="nav-btn" data-tab="coordinador">COORDINADOR ⏳</button>
-        <button class="nav-btn" data-tab="gerencias">GERENCIAS ⏳</button>
-        <button class="nav-btn" data-tab="cierre">CIERRE DIA ⏳</button>
-        <button class="nav-btn" data-tab="historial">HISTORIAL</button>
+    <div style="display:flex;align-items:center;gap:12px;">
+      <div class="hdr-fecha" id="hdr-fecha"></div>
+      <button id="demo-btn" onclick="toggleDemo()" style="font-size:10px;font-weight:700;padding:5px 10px;border:1px solid rgba(255,255,255,.4);border-radius:3px;background:rgba(255,255,255,.15);color:white;cursor:pointer;letter-spacing:.5px;">MODO DEMO: OFF</button>
     </div>
+  </div>
 
-    <!-- SUPERVISOR -->
-    <div class="tab-content active" id="supervisor">
-        <div class="container">
-            <h2>👷 SUPERVISOR - Captura de Fallas</h2>
-            <div id="supervisorAlert"></div>
-            
-            <div class="grid">
-                <div>
-                    <div class="form-group">
-                        <label>SUPERVISOR</label>
-                        <select id="supervisorSelect">
-                            <option value="">-- Selecciona tu nombre --</option>
-                        </select>
-                    </div>
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="tab-sup" onclick="goTab('sup')">Supervisor <span class="badge green" id="b-sup">+</span></button>
+    <button class="nav-tab" id="tab-sub" onclick="goTab('sub')">Subgerente <span class="badge" id="b-sub">0</span></button>
+    <button class="nav-tab" id="tab-coord" onclick="goTab('coord')">Coordinador <span class="badge blue" id="b-coord">0</span></button>
+    <button class="nav-tab" id="tab-ger" onclick="goTab('ger')">Gerencias <span class="badge" style="background:#6c757d" id="b-ger">0</span></button>
+    <button class="nav-tab" id="tab-cierre" onclick="goTab('cierre')">Cierre dia <span class="badge blue" id="b-cierre">0</span></button>
+    <button class="nav-tab" id="tab-historial" onclick="goTab('historial')">Historial</button>
+  </div>
 
-                    <div class="form-group">
-                        <label>NÚMERO ECONÓMICO</label>
-                        <input type="text" id="numEconomico" placeholder="PMX-7342">
-                    </div>
+  <!-- SUP: SUPERVISOR -->
+  <div class="view active" id="view-sup">
+    <div class="form-grid">
+      <div class="left-col">
+        <div class="sec-title">Identificacion del supervisor</div>
+        <div class="user-section">
+          <div class="user-label">Supervisor</div>
+          <select class="user-sel" id="sup-sel" onchange="onSupSel()">
+            <option value="">-- Selecciona tu nombre --</option>
+            <option>Ivan</option>
+            <option>Salvador</option>
+            <option>Gabriel</option>
+            <option>Alejo</option>
+            <option>Andres</option>
+            <option>Julio</option>
+            <option>Ricardo</option>
+          </select>
+        </div>
+        <div id="sup-form" style="display:none">
+          <hr style="border:none;border-top:1px solid #dee2e6;margin:16px 0;">
+          <div class="sec-title">Datos de la unidad</div>
 
-                    <div class="form-group">
-                        <label>TERMINAL</label>
-                        <select id="terminal">
-                            <option value="">-- Selecciona terminal --</option>
-                            <option value="AÑIL">AÑIL</option>
-                            <option value="BARRANCA">BARRANCA</option>
-                            <option value="SAN JUAN IXHUATEPEC">SAN JUAN IXHUATEPEC</option>
-                            <option value="18 DE MARZO">18 DE MARZO</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>GRUPO DE FALLA</label>
-                        <select id="grupo">
-                            <option value="">-- Selecciona grupo --</option>
-                            <option value="Motor">Motor</option>
-                            <option value="Aire Acondicionado">Aire Acondicionado</option>
-                            <option value="Frenos">Frenos</option>
-                            <option value="Dirección">Dirección</option>
-                            <option value="Suspensión">Suspensión</option>
-                            <option value="Transmisión">Transmisión</option>
-                            <option value="Sistema Eléctrico">Sistema Eléctrico</option>
-                            <option value="Llantas">Llantas</option>
-                            <option value="Carrocería">Carrocería</option>
-                            <option value="Cabina">Cabina</option>
-                            <option value="Escape">Escape</option>
-                            <option value="Embrague">Embrague</option>
-                            <option value="Eje y Tren de Rodaje">Eje y Tren de Rodaje</option>
-                            <option value="Sistema de Aire">Sistema de Aire</option>
-                            <option value="Sistema de Llenado">Sistema de Llenado</option>
-                            <option value="Sistema Cuenta Litros">Sistema Cuenta Litros</option>
-                            <option value="Telemetría y Video">Telemetría y Video</option>
-                            <option value="Tonel / Compartimentos">Tonel / Compartimentos</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>CATEGORÍA DE FALLA</label>
-                        <select id="categoria">
-                            <option value="">-- Selecciona categoría --</option>
-                            <option value="Aceite bajo">Aceite bajo</option>
-                            <option value="Refrigeración">Refrigeración</option>
-                            <option value="Combustible">Combustible</option>
-                            <option value="Turbo">Turbo</option>
-                            <option value="Postratamiento">Postratamiento</option>
-                            <option value="UREA">UREA</option>
-                            <option value="Códigos">Códigos</option>
-                            <option value="Otro">Otro</option>
-                        </select>
-                    </div>
-
-                    <div class="form-group">
-                        <label>DESCRIPCIÓN</label>
-                        <textarea id="descripcion" rows="4" placeholder="Describe la falla en detalle..."></textarea>
-                    </div>
-
-                    <button onclick="reportarFalla()">🚨 REPORTAR FALLA</button>
-                </div>
-
-                <div>
-                    <div class="card">
-                        <h3>📋 Instrucciones</h3>
-                        <p>1. Selecciona tu nombre</p>
-                        <p>2. Ingresa el número económico de la unidad</p>
-                        <p>3. Selecciona la terminal</p>
-                        <p>4. Categoriza el tipo de falla</p>
-                        <p>5. Describe el problema</p>
-                        <p>6. Haz clic en "REPORTAR FALLA"</p>
-                        <hr style="margin: 15px 0;">
-                        <p><strong>El Subgerente recibirá una notificación por email inmediatamente.</strong></p>
-                    </div>
-                </div>
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;font-weight:700;color:#495057;text-transform:uppercase;display:block;margin-bottom:5px;">Unidad</label>
+            <div class="pfx-wrap">
+              <button class="pfx-btn pmx" id="pfx-pmx" onclick="setPfx('PMX')">PMX</button>
+              <button class="pfx-btn" id="pfx-tis" onclick="setPfx('TIS')">TIS</button>
+              <input type="text" class="fld-in pfx-num" id="unit-num" placeholder="20001" maxlength="5">
             </div>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;font-weight:700;color:#495057;text-transform:uppercase;display:block;margin-bottom:5px;">Terminal</label>
+            <select class="fld-sel" id="sup-term">
+              <option value="">-- Seleccionar --</option>
+              <option>Anil</option>
+              <option>Barranca del Muerto</option>
+              <option>San Juan Ixhuatepec</option>
+              <option>18 de Marzo</option>
+              <option>Toluca</option>
+              <option>Puebla</option>
+              <option>Tula</option>
+            </select>
+          </div>
+
+          <div style="margin-bottom:12px;">
+            <label style="font-size:11px;font-weight:700;color:#495057;text-transform:uppercase;display:block;margin-bottom:5px;">Tipo de mantenimiento</label>
+            <div class="mtto-row">
+              <button class="mc" id="mc-prev" onclick="setMtto('Preventivo')">
+                <span class="mi">&#128295;</span>
+                <span class="ml">Preventivo</span>
+              </button>
+              <button class="mc" id="mc-corr" onclick="setMtto('Correctivo')">
+                <span class="mi">&#9888;&#65039;</span>
+                <span class="ml">Correctivo</span>
+              </button>
+            </div>
+          </div>
         </div>
-    </div>
+      </div>
 
-    <!-- SUBGERENTE -->
-    <div class="tab-content" id="subgerente">
-        <div class="container">
-            <h2>🏢 SUBGERENTE - Validación de Fallas</h2>
-            <p>Módulo en desarrollo - Validarás fallas reportadas por supervisores</p>
+      <div class="right-col">
+        <div id="sup-fallas-panel" style="display:none">
+          <div class="prog-steps">
+            <div class="ps done" id="ps1"><div class="pn">1</div><span>Unidad</span></div>
+            <div class="pl"></div>
+            <div class="ps act" id="ps2"><div class="pn">2</div><span>Fallas</span></div>
+            <div class="pl"></div>
+            <div class="ps" id="ps3"><div class="pn">3</div><span>Confirmar</span></div>
+          </div>
+
+          <!-- PASO 1: GRUPO -->
+          <div class="sec-title" id="lbl-grupo">1 — Grupo de falla</div>
+          <div class="gg" id="gg" style="margin-bottom:16px;"></div>
+
+          <!-- PASO 2: SUBGRUPO -->
+          <div id="panel-subgrupo" style="display:none;margin-bottom:16px;">
+            <div class="sec-title">2 — Subgrupo <span id="sg-hint" style="font-weight:400;text-transform:none;color:#6c757d;font-size:11px;"></span></div>
+            <div class="gg" id="sgg"></div>
+          </div>
+
+          <!-- PASO 3: SUB-FALLA -->
+          <!-- panel-subfalla kept for structure but hidden always -->
+          <div id="panel-subfalla" style="display:none;"><div id="sfg"></div></div>
+
+          <!-- PASO 3: DESCRIPCION — se muestra al seleccionar subgrupo -->
+          <div id="panel-obs" style="display:none;margin-bottom:16px;">
+            <div class="sec-title">3 — Descripcion de la falla</div>
+            <div style="padding:14px;background:#f0f4ff;border:2px solid #c7d2fa;border-radius:6px;margin-bottom:10px;">
+              <label style="font-size:12px;font-weight:700;color:#084298;display:block;margin-bottom:6px;">
+                &#9997; Describe la falla <span style="font-size:10px;font-weight:400;color:#adb5bd;">(opcional)</span>
+                <span style="font-size:10px;font-weight:400;color:#6c757d;margin-left:6px;">Que falla, donde, como la detectaste</span>
+              </label>
+              <textarea id="falla-libre" rows="3"
+                style="width:100%;padding:10px;font-size:13px;font-family:inherit;border:2px solid #9ec5fe;border-radius:4px;resize:vertical;outline:none;background:white;"
+                placeholder="Ej: Bolsa de aire 3er eje lado derecho desinflada, unidad se inclina al cargar..."></textarea>
+            </div>
+            <div>
+              <label style="font-size:11px;font-weight:600;color:#6c757d;display:block;margin-bottom:4px;">Observaciones adicionales <span style="font-weight:400;color:#adb5bd;">(opcional)</span></label>
+              <textarea class="fld-ta" id="obs-f" rows="2" placeholder="Notas adicionales, reincidencia, contexto..."></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:8px;margin-bottom:12px;" id="panel-agregar">
+            <button class="btn btn-add" onclick="addFalla()" style="font-size:13px;padding:12px;">+ Agregar esta falla al reporte</button>
+          </div>
+          <div style="margin-bottom:20px;">
+            <button class="btn btn-primary" id="btn-enviar-sup" onclick="supEnviar()" disabled style="width:100%;padding:12px;">Enviar reporte al Subgerente</button>
+          </div>
+
+          <div id="rl-wrap" style="display:none;">
+            <div class="sec-title">Fallas capturadas <span id="rl-count" style="font-weight:400;color:#6c757d;"></span></div>
+            <div class="rl" id="rl"></div>
+          </div>
         </div>
-    </div>
 
-    <!-- COORDINADOR -->
-    <div class="tab-content" id="coordinador">
-        <div class="container">
-            <h2>🔧 COORDINADOR - Asignación de Proveedores</h2>
-            <p>Módulo en desarrollo - Asignarás proveedores y tickets SISCO</p>
+        <div id="sup-idle" style="text-align:center;padding:60px 20px;color:#adb5bd;">
+          <div style="font-size:48px;margin-bottom:16px;">Camion</div>
+          <div style="font-size:14px;font-weight:600;margin-bottom:6px;color:#6c757d;">Selecciona tu nombre para comenzar</div>
+          <div style="font-size:12px;">Ingresa los datos de la unidad y registra cada falla por separado</div>
         </div>
+      </div>
     </div>
+  </div>
 
-    <!-- GERENCIAS -->
-    <div class="tab-content" id="gerencias">
-        <div class="container">
-            <h2>📊 GERENCIAS - Dashboard</h2>
-            <p>Módulo en desarrollo - Verás dashboard de fallas en tiempo real</p>
-        </div>
+  <!-- SUB: SUBGERENTE -->
+  <div class="view" id="view-sub">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Subgerente</label>
+        <select class="user-sel" id="sub-sel" style="margin-left:10px;width:auto;">
+          <option value="">-- Selecciona tu nombre --</option>
+          <option>Ing. Marco Anibal Chavez</option>
+          <option>Ing. Gerardo Balino Magana</option>
+          <option>Ing. Alberto Amador</option>
+          <option>Ing. Javier Zarate</option>
+          <option>Ing. Jose Antonio Hernandez</option>
+        </select>
+      </div>
+      <button class="btn btn-sec btn-sm" onclick="cargarSub()">Actualizar</button>
     </div>
-
-    <!-- CIERRE DIA -->
-    <div class="tab-content" id="cierre">
-        <div class="container">
-            <h2>✓ CIERRE DE DIA</h2>
-            <p>Módulo en desarrollo - Cerrarás fallas con evidencia fotográfica</p>
-        </div>
+    <div class="stats">
+      <div class="stat sn-t"><div class="stat-n" id="ss-t">0</div><div class="stat-l">Total</div></div>
+      <div class="stat sn-p"><div class="stat-n" id="ss-p">0</div><div class="stat-l">Pendientes</div></div>
+      <div class="stat sn-a"><div class="stat-n" id="ss-a">0</div><div class="stat-l">Aprobados</div></div>
+      <div class="stat sn-x"><div class="stat-n" id="ss-r">0</div><div class="stat-l">Rechazados</div></div>
+      <div class="stat sn-c"><div class="stat-n" id="ss-i">0</div><div class="stat-l">En proceso</div></div>
     </div>
+    <div class="sec-title">Fallas pendientes de validacion</div>
+    <div class="fcards" id="sub-cards"></div>
+  </div>
 
-    <!-- HISTORIAL -->
-    <div class="tab-content" id="historial">
-        <div class="container">
-            <h2>📜 HISTORIAL DE FALLAS</h2>
-            <p>Módulo en desarrollo - Verás el historial completo de fallas</p>
-        </div>
+  <!-- COORD: COORDINADOR -->
+  <div class="view" id="view-coord">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div>
+        <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Coordinador</label>
+        <select class="user-sel" id="coord-sel" style="margin-left:10px;width:auto;">
+          <option value="">-- Selecciona tu nombre --</option>
+          <option>Ing. Eder Emanuel Valdez</option>
+          <option>Sergio A. Garcia</option>
+          <option>Ing. Javier Zarate</option>
+          <option>Ing. Jose Antonio Hernandez</option>
+        </select>
+      </div>
+      <button class="btn btn-sec btn-sm" onclick="cargarCoord()">Actualizar</button>
     </div>
+    <div class="nota-fuo">Actualiza el FUO manualmente primero. Luego asigna proveedor y estatus operativo a cada falla aqui. Al confirmar se notifica a las Gerencias.</div>
+    <div class="stats">
+      <div class="stat sn-a"><div class="stat-n" id="cs-a">0</div><div class="stat-l">Por asignar</div></div>
+      <div class="stat sn-c"><div class="stat-n" id="cs-c">0</div><div class="stat-l">Confirmadas</div></div>
+      <div class="stat sn-p"><div class="stat-n" id="cs-r">0</div><div class="stat-l">Reprogramar</div></div>
+      <div class="stat sn-x"><div class="stat-n" id="cs-x">0</div><div class="stat-l">Cerradas</div></div>
+    </div>
+    <div class="sec-title">Aprobadas - pendientes de asignacion</div>
+    <div class="fcards" id="coord-cards"></div>
+    <div style="margin-top:28px;padding-top:20px;border-top:2px solid #e9ecef;">
+      <div style="font-size:13px;font-weight:700;color:#2c3e50;margin-bottom:6px;">Cierre del dia</div>
+      <div style="font-size:12px;color:#6c757d;margin-bottom:14px;">Genera el reporte de cierre cuando termines el turno. Se enviara el detalle completo a Subgerentes, Gerencia Regional y Gerencia de Mantenimiento. Las ordenes abiertas se arrastran al siguiente dia automaticamente.</div>
+      <button class="btn btn-primary" id="btn-cierre-dia" onclick="cierreDiaCoord()" style="background:linear-gradient(135deg,#2c3e50 0%,#3498db 100%);padding:13px 24px;">
+        Generar cierre del dia &rarr; Notificar a Gerencias
+      </button>
+    </div>
+  </div>
 
-    <script>
-        // CONFIGURACIÓN
-        const WEBHOOK = "https://script.google.com/macros/s/AKfycbzEV9la7PKie1hD60JmR4lO7IVaDVOhGMyOMEFZNmDBw4FVik8tMo2xHIMmAccWSLIVkQ/exec";
-        let MODO_DEMO = false;
+  <!-- GER: GERENCIAS -->
+  <div class="view" id="view-ger">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div style="font-size:13px;color:#6c757d;">Gerencia Regional GLR Valle de Mexico &middot; Gerencia de Mantenimiento</div>
+      <button class="btn btn-sec btn-sm" onclick="cargarGer()">Actualizar</button>
+    </div>
+    <div class="stats">
+      <div class="stat sn-t"><div class="stat-n" id="g-t">0</div><div class="stat-l">Total</div></div>
+      <div class="stat sn-p"><div class="stat-n" id="g-p">0</div><div class="stat-l">Pendientes</div></div>
+      <div class="stat sn-a"><div class="stat-n" id="g-a">0</div><div class="stat-l">Aprobadas</div></div>
+      <div class="stat sn-c"><div class="stat-n" id="g-c">0</div><div class="stat-l">Asignadas</div></div>
+      <div class="stat sn-x"><div class="stat-n" id="g-x">0</div><div class="stat-l">Cerradas</div></div>
+    </div>
+    <div class="filt-row">
+      <div class="filt-group"><span class="filt-lbl">Unidad</span><input class="filt-in" id="fi-u" placeholder="PMX o TIS..." oninput="filtrar()"></div>
+      <div class="filt-group"><span class="filt-lbl">Terminal</span>
+        <select class="filt-in" id="fi-t" onchange="filtrar()">
+          <option value="">Todas</option>
+          <option>Anil</option><option>Barranca del Muerto</option>
+          <option>San Juan Ixhuatepec</option><option>18 de Marzo</option>
+        </select>
+      </div>
+      <div class="filt-group"><span class="filt-lbl">Estado</span>
+        <select class="filt-in" id="fi-e" onchange="filtrar()">
+          <option value="">Todos</option>
+          <option value="REPORTADO">Pendiente</option>
+          <option value="APROBADO">Aprobado</option>
+          <option value="ASIGNADO">Asignado</option>
+          <option value="CERRADO">Cerrado</option>
+          <option value="RECHAZADO">Rechazado</option>
+        </select>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:5px;">
+        <button class="btn btn-sec btn-sm" onclick="limpiarFilt()">Limpiar</button>
+        <button class="btn btn-add btn-sm" onclick="exportar()">Exportar CSV</button>
+      </div>
+    </div>
+    <div class="filt-cnt">Mostrando <span id="g-cnt">0</span> de <span id="g-tot">0</span> registros</div>
+    <div class="sec-title" style="margin-top:12px;">Historico de fallas</div>
+    <div style="overflow-x:auto;">
+      <table class="tbl" id="ger-tbl">
+        <thead><tr><th>Folio</th><th>Unidad</th><th>Terminal</th><th>Tipo</th><th>Supervisor</th><th>Fallas</th><th>Proveedor</th><th>Estatus Op.</th><th>Estado</th></tr></thead>
+        <tbody id="ger-tbody"></tbody>
+      </table>
+    </div>
+    <div class="sec-title" style="margin-top:20px;">Notificaciones</div>
+    <div class="wa-log" id="wa-log"><div style="color:#adb5bd;font-size:12px;padding:8px;">Sin notificaciones aun. Apareceran cuando el coordinador confirme registros.</div></div>
+  </div>
 
-        // TABS
-        document.querySelectorAll('.nav-btn').forEach(btn => {
-            btn.addEventListener('click', function() {
-                document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-                
-                this.classList.add('active');
-                document.getElementById(this.dataset.tab).classList.add('active');
-            });
-        });
+  <!-- CIERRE -->
+  <div class="view" id="view-cierre">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Supervisor</label>
+        <select class="user-sel" id="cierre-sup-sel" style="width:auto;" onchange="cargarCierre()">
+          <option value="">-- Selecciona tu nombre --</option>
+          <option>Ivan</option><option>Salvador</option><option>Gabriel</option>
+          <option>Alejo</option><option>Andres</option><option>Julio</option><option>Ricardo</option>
+        </select>
+        <span style="font-size:11px;color:#6c757d;">|</span>
+        <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Turno</label>
+        <select class="user-sel" id="cierre-turno" style="width:auto;">
+          <option value="Matutino">Matutino</option>
+          <option value="Vespertino">Vespertino</option>
+          <option value="Nocturno">Nocturno</option>
+        </select>
+      </div>
+      <button class="btn btn-sec btn-sm" onclick="cargarCierre()">Actualizar</button>
+    </div>
+    <div class="stats">
+      <div class="stat sn-t"><div class="stat-n" id="ci-t">0</div><div class="stat-l">Asignadas</div></div>
+      <div class="stat sn-x"><div class="stat-n" id="ci-o">0</div><div class="stat-l">Concluidas</div></div>
+      <div class="stat sn-p"><div class="stat-n" id="ci-p">0</div><div class="stat-l">Pendientes</div></div>
+      <div class="stat sn-a"><div class="stat-n" id="ci-r">0</div><div class="stat-l">Reprogramar</div></div>
+    </div>
+    <div style="background:#fff3cd;border:1px solid #ffe69c;border-radius:5px;padding:10px 14px;margin-bottom:14px;font-size:12px;color:#856404;">
+      <strong>Instruccion:</strong> Marca cada falla con su resultado. Las <strong>Concluidas</strong> requieren foto de evidencia obligatoria. Las <strong>Pendientes</strong> y <strong>Reprogramadas</strong> se notifican al Coordinador y se arrastran al siguiente dia.
+    </div>
+    <div class="sec-title">Fallas del turno</div>
+    <div class="fcards" id="cierre-cards"></div>
+    <button class="btn btn-primary" id="btn-cierre-enviar" onclick="enviarCierre()" disabled style="margin-top:20px;width:100%;padding:13px;">
+      Enviar cierre de turno &rarr; Notificar a Subgerente y Coordinador
+    </button>
+  </div>
 
-        // DEMO TOGGLE
-        document.getElementById('demoToggle').addEventListener('click', function() {
-            MODO_DEMO = !MODO_DEMO;
-            this.textContent = MODO_DEMO ? 'MODO DEMO: ON' : 'MODO DEMO: OFF';
-            this.classList.toggle('active');
-        });
+  <!-- HISTORIAL -->
+  <div class="view" id="view-historial">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:13px;color:#6c757d;">Historial completo de todos los registros</div>
+      <button class="btn btn-sec btn-sm" onclick="cargarHistorial()">Actualizar</button>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tbl">
+        <thead><tr><th>Folio</th><th>Fecha</th><th>Unidad</th><th>Terminal</th><th>Supervisor</th><th>Tipo Mtto</th><th>Fallas</th><th>Aprobado por</th><th>Proveedor</th><th>Estatus Op.</th><th>Estado</th></tr></thead>
+        <tbody id="hist-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
 
-        // CARGAR SUPERVISORES
-        function cargarSupervisores() {
-            // Simulamos con datos locales (en producción vendrían de Google Sheets)
-            const supervisores = [
-                'Ivan Fernando Reyes González',
-                'Julio Ricardo Castillo Luna',
-                'Carlos Salvador Baez Díaz',
-                'Gabriel Alvarez Sánchez',
-                'Alejo Carmona Barradas',
-                'Andres Ignacio Reyes Silva',
-                'Jesus Salvador de la Cruz Hernández',
-                'Ricardo Arturo Neri Trejo'
-            ];
+<script>
+var WEBHOOK = "https://script.google.com/macros/s/AKfycbzEV9la7PKie1hD60JmR4lO7IVaDVOhGMyOMEFZNmDBw4FVik8tMo2xHIMmAccWSLIVkQ/exec";
 
-            const select = document.getElementById('supervisorSelect');
-            supervisores.forEach(sup => {
-                const option = document.createElement('option');
-                option.value = sup;
-                option.textContent = sup;
-                select.appendChild(option);
-            });
-        }
+var CAT = {"Aire Acondicionado": ["No enfría / No funciona", "Compresor A/C", "Polea magnética", "Manguera / Fuga de refrigerante", "Módulo de control", "Otro - Aire Acondicionado"], "Cabina": ["Asiento del operador", "Botonera / Controles eléctricos", "Espejos laterales / Retrovisor", "Visera / Toldo / Cofre", "Parabrisas / Plumillas", "Iluminación interior", "Cámara de reversa / Pantalla", "TCS3000 / Electronivel", "Otro - Cabina"], "Carrocería": ["Defensa delantera / Trasera", "Escalera / Estribo / Perchero", "Rombos / Porta rombos", "Canastilla / Domo", "Tonel - Poro / Soldadura", "Tonel - Oxidación / Pintura", "Rines / Birlos", "Tapón de combustible / Autoconsumo", "Manguera de vapores", "Banderines / Señalización", "Siniestro / Golpe / Daño operativo", "Otro - Carrocería"], "Dirección": ["Dirección dura / Desviación", "Fuga de aceite hidráulico", "Pernos / Bujes / Brazo viajero", "Otro - Dirección"], "Eje y Tren de Rodaje": ["Maza / Retén / Aceite de maza", "Cruceta / Yugo / Flecha cardan", "Birlos / Tornillería de eje", "Diferencial - Fuga / Ruido", "Quinta rueda - Juego / Engrase", "Otro - Eje y Tren de Rodaje"], "Embrague": ["Pedal duro / No regresa", "Disco / Plato - Se patina", "Ruido al accionar embrague", "Otro - Embrague"], "Escape": ["Matachispas / Colilla", "Tolva deflectora / Cubre escape", "Soporte / Abrazadera de escape", "Tubo flexible / Manguera", "Fuga de gases a cabina", "Otro - Escape"], "Frenos": ["Balatas - Desgaste / Cambio", "Matracas / Ajustadores", "ABS - Sensor / Código activo", "Freno de motor / Retarder", "Sistema neumático de frenos", "Otro - Frenos"], "Llantas": ["Ponchadura / Desponche", "Desgaste / Bajo milimetraje", "Reemplazo programado", "Otro - Llantas"], "Motor": ["Fuga de aceite", "Refrigeración / Anticongelante", "Combustible / Bomba / Inyector", "Turbo / Admisión", "Pérdida de potencia / Códigos activos", "No enciende / No arranca", "Mantenimiento preventivo", "Sistema de Postratamiento / UREA / SCR / DPF", "Sistema de Enfriamiento", "Otro - Motor"], "Sistema de Aire": ["Fuga de aire general", "Compresor neumático", "Secador de aire", "Manguera espiral", "Freno de estacionamiento", "Otro - Sistema de Aire"], "Sistema de Llenado por el Fondo": ["Sello electrónico / Tapín", "Válvula Betts / API descarga", "Válvula 3 vías / Interlock / Pulsador", "Caja de válvulas / Platina", "Manómetros / Mirillas", "Manguera de vapores", "Canastilla", "Filtro regulador / FESTO", "Fuga de producto", "Fuga de aire en sistema", "Válvula de emergencia / Oblea", "Sensor de sobrellenado", "Calibración volumétrica", "Otro - Sistema de Llenado"], "Sistema Cuenta Litros": ["Pantalla TCS3000", "Válvula Betts - Falla electrónica", "Sonda Madison", "Sello electrónico / Tapín sin imán", "Medidor directo T1 / T2", "Polea compresor", "Otro - Sistema Cuenta Litros"], "Sistema Eléctrico": ["Baterías - Descarga / No retienen", "ABS / Sensor de velocidad", "Iluminación exterior - Focos / Galibo", "Velocímetro / Tablero / Comunicación", "Pedal acelerador / Pérdida de potencia", "Cuartos / Luces de tonel", "Otro - Sistema Eléctrico"], "Suspensión": ["Bolsas de aire", "Amortiguadores", "Muelles / Resortes / Balancín", "Pernos / Bujes de suspensión", "Válvula niveladora / Módulo solenoide", "Desviación / Geometría", "Otro - Suspensión"], "Telemetría y Video": ["Cámara de reversa", "DMAS / Grabación / Video", "Botón de emergencia / Membrana", "TCS3000 - Falla general", "Comunicación cabina / Torre", "Otro - Telemetría y Video"], "Tonel / Compartimentos": ["Poro / Fisura en tonel", "Soldadura / Reparación estructural", "Oxidación / Pintura tonel", "Ejes de tonel / Maza", "Calibración volumétrica", "Otro - Tonel / Compartimentos"], "Transmisión": ["Ruido / Vibración en transmisión", "Se neutraliza / No entra velocidad", "Cardan / Cruceta", "Palanca de cambios", "Otro - Transmisión"]};
 
-        // REPORTAR FALLA
-        function reportarFalla() {
-            const supervisor = document.getElementById('supervisorSelect').value;
-            const numEconomico = document.getElementById('numEconomico').value;
-            const terminal = document.getElementById('terminal').value;
-            const grupo = document.getElementById('grupo').value;
-            const categoria = document.getElementById('categoria').value;
-            const descripcion = document.getElementById('descripcion').value;
+var PROVS = ["ASE","CRA","CRA / ASE","PEMEX","Aseguradora","KREATO","TRAFFILOG","Rodamientos","PetroCalibrations","Juridico","Agencia"];
 
-            // VALIDACIÓN
-            if (!supervisor || !numEconomico || !terminal || !grupo || !categoria) {
-                mostrarAlerta('supervisorAlert', 'Por favor completa todos los campos', 'error');
-                return;
-            }
+// ESTADO
+var DB = [];
+var waLog = [];
+var pfx = "PMX", mtto = "", grp = "", sfs = [], fallas = [];
+var estSel = {}, subEstSel = {}, cierreSel = {};
 
-            // MODO DEMO
-            if (MODO_DEMO) {
-                mostrarAlerta('supervisorAlert', '✅ [DEMO] Falla reportada: ' + numEconomico, 'success');
-                limpiarFormulario();
-                return;
-            }
+// INIT
+document.getElementById("hdr-fecha").textContent = new Date().toLocaleDateString("es-MX",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
 
-            // ENVIAR AL WEBHOOK
-            const datos = {
-                accion: 'guardarFalla',
-                supervisor: supervisor,
-                numEconomico: numEconomico,
-                terminal: terminal,
-                grupo: grupo,
-                categoria: categoria,
-                descripcion: descripcion,
-                numeroWhatsApp: '5542167665' // Email alternativo
-            };
+// Build grupo grid
+var ggEl = document.getElementById("gg");
+Object.keys(CAT).forEach(function(g){
+  var d = document.createElement("div"); d.className = "gc";
+  var n = document.createElement("div"); n.className = "gc-name"; n.textContent = g;
+  var c = document.createElement("div"); c.className = "gc-cnt"; c.textContent = CAT[g].length + " categorias";
+  d.appendChild(n); d.appendChild(c);
+  d.onclick = function(){ selGrupo(g, d); };
+  ggEl.appendChild(d);
+});
 
-            fetch(WEBHOOK, {
-                method: 'POST',
-                body: new URLSearchParams(datos)
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    mostrarAlerta('supervisorAlert', '✅ Falla reportada exitosamente. Se envió notificación a Subgerentes.', 'success');
-                    limpiarFormulario();
-                } else {
-                    mostrarAlerta('supervisorAlert', '❌ Error: ' + data.error, 'error');
-                }
-            })
-            .catch(error => {
-                mostrarAlerta('supervisorAlert', '❌ Error de conexión: ' + error, 'error');
-            });
-        }
+// --- HELPERS ---
+function alerta(msg, tipo){ tipo = tipo||"info";
+  var c = document.getElementById("alert-container");
+  var a = document.createElement("div"); a.className = "alert alert-" + tipo; a.textContent = msg;
+  c.appendChild(a); setTimeout(function(){ a.remove(); }, 5000);
+}
+function loader(on){ document.getElementById("loader").classList.toggle("on", on); }
+function goTab(t){
+  document.querySelectorAll(".view").forEach(function(v){ v.classList.remove("active"); });
+  document.querySelectorAll(".nav-tab").forEach(function(v){ v.classList.remove("active"); });
+  document.getElementById("view-"+t).classList.add("active");
+  document.getElementById("tab-"+t).classList.add("active");
+  if(t==="sub") cargarSub();
+  if(t==="coord") cargarCoord();
+  if(t==="ger") cargarGer();
+  if(t==="cierre") cargarCierre();
+  if(t==="historial") cargarHistorial();
+}
 
-        // HELPERS
-        function mostrarAlerta(elementId, mensaje, tipo) {
-            const element = document.getElementById(elementId);
-            element.innerHTML = `<div class="alert alert-${tipo}">${mensaje}</div>`;
-        }
+// --- MODO DEMO (sin backend) ---
+var DEMO_MODE = false; // Cambia a true para probar sin Apps Script
+var DEMO_DB = [];
 
-        function limpiarFormulario() {
-            document.getElementById('numEconomico').value = '';
-            document.getElementById('terminal').value = '';
-            document.getElementById('grupo').value = '';
-            document.getElementById('categoria').value = '';
-            document.getElementById('descripcion').value = '';
-        }
+function toArray(v){ return Array.isArray(v) ? v : (v && typeof v === "object" && !Array.isArray(v) ? Object.values(v) : []); }
 
-        // INIT
-        document.addEventListener('DOMContentLoaded', function() {
-            cargarSupervisores();
-        });
-    </script>
+function apiFetch(payload, onOk, onErr){
+  // DEMO MODE — responde localmente sin llamar al backend
+  if(DEMO_MODE){
+    loader(true);
+    setTimeout(function(){
+      loader(false);
+      var res = demoHandler(payload);
+      if(res.success) onOk(res);
+      else { alerta("Demo: " + (res.mensaje||"error"), "danger"); if(onErr) onErr(res); }
+    }, 400);
+    return;
+  }
+  loader(true);
+  fetch(WEBHOOK, {method:"POST", body:JSON.stringify(payload)})
+    .then(function(r){ return r.json(); })
+    .then(function(res){
+      loader(false);
+      // Normalizar arrays defensivamente
+      if(res.datos && !Array.isArray(res.datos)) res.datos = toArray(res.datos);
+      if(res.todos && !Array.isArray(res.todos)) res.todos = toArray(res.todos);
+      if(!res.datos) res.datos = [];
+      if(!res.todos) res.todos = res.datos;
+      if(res.success) onOk(res);
+      else { alerta("Error: " + (res.mensaje||"desconocido"), "danger"); if(onErr) onErr(res); }
+    })
+    .catch(function(e){ loader(false); alerta("Error de conexion: " + e.message, "danger"); if(onErr) onErr(e); });
+}
+
+// --- DEMO HANDLER ---
+function demoHandler(payload){
+  var action = payload.action;
+  var hora = new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"});
+  var fecha = new Date().toLocaleDateString("es-MX");
+
+  if(action === "guardar"){
+    var folio = "FUO-DEMO-" + Math.floor(10000+Math.random()*90000);
+    var reg = Object.assign({}, payload.payload, {
+      folio: folio, estado: "REPORTADO", fila: DEMO_DB.length+2,
+      fecha: fecha, hora: hora,
+      estatusOpSub:"", obsSub:"", aprobadoPor:"", proveedor:"",
+      estatusOp:"", cierreEstado:"", motivoRechazo:""
+    });
+    DEMO_DB.push(reg);
+    return {success:true, folio:folio, fila:reg.fila, mensaje:"Demo: guardado"};
+  }
+
+  if(action === "obtener"){
+    var filtros = payload.filtros || {};
+    var todos = DEMO_DB.slice();
+    var datos = todos.filter(function(r){
+      if(filtros.estado && r.estado !== filtros.estado) return false;
+      if(filtros.supervisor && r.supervisor !== filtros.supervisor) return false;
+      return true;
+    });
+    return {success:true, datos:datos, todos:todos, waLog:[]};
+  }
+
+  if(action === "actualizar"){
+    var idx = DEMO_DB.findIndex(function(r){ return r.folio === payload.folio; });
+    if(idx < 0) return {success:false, mensaje:"No encontrado"};
+    var r = DEMO_DB[idx];
+    r.estado = payload.estado;
+    if(payload.role === "subgerente"){
+      r.estatusOpSub = payload.estatusOpSub || "";
+      r.obsSub = payload.obsSub || "";
+      r.aprobadoPor = payload.usuario || "";
+      if(payload.estado === "RECHAZADO") r.motivoRechazo = payload.motivoRechazo || "";
+    }
+    if(payload.role === "coordinador"){
+      r.coordPor = payload.usuario || "";
+      var fd = payload.fallasDatos || [];
+      var provs = [], estFinal = "Operando";
+      var orden = ["Fuera de Operacion","Falla administrada","Operando"];
+      fd.forEach(function(f){
+        if(f.proveedor && provs.indexOf(f.proveedor)<0) provs.push(f.proveedor);
+        if(orden.indexOf(f.estatusOp) < orden.indexOf(estFinal)) estFinal = f.estatusOp;
+        if(r.fallas && r.fallas[f.idx]){ r.fallas[f.idx].proveedor=f.proveedor; r.fallas[f.idx].estatusOp=f.estatusOp; }
+      });
+      r.proveedor = provs.join(" / ");
+      r.estatusOp = estFinal;
+    }
+    return {success:true, mensaje:"Demo: actualizado"};
+  }
+
+  if(action === "cerrar-dia"){
+    var cierres = payload.payload.cierres || [];
+    cierres.forEach(function(c){
+      var r = DEMO_DB.find(function(x){ return x.folio===c.folio; });
+      if(!r) return;
+      r.cierreEstado = c.estado;
+      if(c.estado === "atendida") r.estado = "CERRADO";
+      else if(c.estado === "reprogramar"){ r.estado="APROBADO"; r.proveedor=""; r.estatusOp=""; }
+    });
+    return {success:true, mensaje:"Demo: cierre registrado"};
+  }
+
+  return {success:false, mensaje:"Accion no reconocida"};
+}
+
+// --- SUPERVISOR ---
+function onSupSel(){
+  var sup = document.getElementById("sup-sel").value;
+  document.getElementById("sup-form").style.display = sup ? "block" : "none";
+  document.getElementById("sup-fallas-panel").style.display = sup ? "block" : "none";
+  document.getElementById("sup-idle").style.display = sup ? "none" : "block";
+}
+function setPfx(p){ pfx = p;
+  document.getElementById("pfx-pmx").className = "pfx-btn" + (p==="PMX" ? " pmx" : "");
+  document.getElementById("pfx-tis").className = "pfx-btn" + (p==="TIS" ? " tis" : "");
+  var inp = document.getElementById("unit-num");
+  inp.placeholder = p==="PMX" ? "20001" : "0000001";
+  inp.maxLength = p==="PMX" ? 5 : 7;
+  inp.value = "";
+}
+function setMtto(v){ mtto = v;
+  document.getElementById("mc-prev").className = "mc" + (v==="Preventivo" ? " prev" : "");
+  document.getElementById("mc-corr").className = "mc" + (v==="Correctivo" ? " corr" : "");
+}
+var subgrp = "";
+
+function selGrupo(g, el){
+  document.querySelectorAll("#gg .gc").forEach(function(c){ c.classList.remove("on"); });
+  el.classList.add("on");
+  grp = g; subgrp = ""; sfs = [];
+  var sgg = document.getElementById("sgg"); sgg.innerHTML = "";
+  sgg.className = "gg sgg";
+  CAT[g].forEach(function(sg){
+    var d = document.createElement("div"); d.className = "gc";
+    var n = document.createElement("div"); n.className = "gc-name"; n.textContent = sg;
+    d.appendChild(n);
+    d.onclick = function(){ selSubgrupo(sg, d); };
+    sgg.appendChild(d);
+  });
+  document.getElementById("panel-subgrupo").style.display = "block";
+  document.getElementById("sg-hint").textContent = "- " + CAT[g].length + " categorias";
+  document.getElementById("panel-subfalla").style.display = "none";
+  document.getElementById("panel-obs").style.display = "none";
+  document.getElementById("panel-agregar").style.display = "none";
+  document.getElementById("falla-libre").value = "";
+}
+
+function selSubgrupo(sg, el){
+  document.querySelectorAll("#sgg .gc").forEach(function(c){ c.classList.remove("on"); });
+  el.classList.add("on");
+  subgrp = sg;
+  document.getElementById("panel-subfalla").style.display = "none";
+  document.getElementById("panel-obs").style.display = "block";
+  document.getElementById("panel-agregar").style.display = "flex";
+  document.getElementById("falla-libre").value = "";
+  document.getElementById("falla-libre").focus();
+}
+function addFalla(){
+  if(!grp){ alerta("Selecciona el grupo de falla", "danger"); return; }
+  if(!subgrp){ alerta("Selecciona la categoria", "danger"); return; }
+  var desc = document.getElementById("falla-libre") ? document.getElementById("falla-libre").value.trim() : "";
+  fallas.push({grupo:grp, subgrupo:subgrp, descripcion:desc, subfallas:[desc||subgrp], obs:document.getElementById("obs-f")?document.getElementById("obs-f").value.trim():""});
+  alerta("Falla " + fallas.length + " agregada: " + grp + " ▸ " + subgrp, "success");
+  renderRL();
+  // Reset only description and subgrupo — keep grupo selected so supervisor can add another quickly
+  subgrp = "";
+  document.querySelectorAll("#sgg .gc").forEach(function(c){ c.classList.remove("on"); });
+  var fl = document.getElementById("falla-libre"); if(fl){ fl.value=""; fl.style.borderColor="#9ec5fe"; }
+  var of = document.getElementById("obs-f"); if(of) of.value="";
+  document.getElementById("panel-obs").style.display = "none";
+  document.getElementById("panel-agregar").style.display = "none";
+  document.getElementById("btn-enviar-sup").disabled = false;
+  // Scroll to fallas list
+  var rl = document.getElementById("rl-wrap"); if(rl) rl.scrollIntoView({behavior:"smooth", block:"nearest"});
+}
+function renderRL(){
+  var wrap = document.getElementById("rl-wrap"), rl = document.getElementById("rl");
+  if(!fallas.length){ wrap.style.display="none"; return; }
+  wrap.style.display = "block";
+  document.getElementById("rl-count").textContent = "(" + fallas.length + " falla" + (fallas.length>1?"s":"") + ")";
+  rl.innerHTML = "";
+  fallas.forEach(function(f, i){
+    var item = document.createElement("div"); item.className = "ri";
+    var num = document.createElement("div"); num.className = "ri-num"; num.textContent = "F" + (i<9?"0":"") + (i+1);
+    var info = document.createElement("div"); info.className = "ri-info";
+    var g = document.createElement("div"); g.className = "ri-g"; g.textContent = f.grupo + (f.subgrupo ? "  ▸  " + f.subgrupo : "");
+    var d = document.createElement("div"); d.className = "ri-d"; d.textContent = (f.descripcion||f.subfallas&&f.subfallas.join(" / ")||"") + (f.obs ? " | " + f.obs : "");
+    info.appendChild(g); info.appendChild(d);
+    var del = document.createElement("button"); del.className = "ri-del"; del.textContent = "x";
+    del.onclick = (function(idx){ return function(){ delFalla(idx); }; })(i);
+    item.appendChild(num); item.appendChild(info); item.appendChild(del);
+    rl.appendChild(item);
+  });
+}
+function delFalla(i){
+  fallas.splice(i, 1);
+  renderRL();
+  if(!fallas.length) document.getElementById("btn-enviar-sup").disabled = true;
+}
+function supEnviar(){
+  var sup = document.getElementById("sup-sel").value;
+  var num = document.getElementById("unit-num").value.trim();
+  var term = document.getElementById("sup-term").value;
+  if(!num){ alerta("Ingresa el numero de unidad", "danger"); return; }
+  if(!term){ alerta("Selecciona la terminal", "danger"); return; }
+  if(!mtto){ alerta("Selecciona Preventivo o Correctivo", "danger"); return; }
+  if(!fallas.length){ alerta("Agrega al menos una falla", "danger"); return; }
+  var payload = {
+    action: "guardar",
+    payload: {
+      supervisor: sup, unidad: pfx + num, terminal: term, mtto: mtto,
+      fallas: fallas, fecha: new Date().toLocaleDateString("es-MX"),
+      hora: new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})
+    }
+  };
+  apiFetch(payload, function(res){
+    alerta("Reporte enviado - Folio: " + res.folio, "success");
+    fallas = []; mtto = ""; renderRL(); resetFalla();
+    document.getElementById("unit-num").value = "";
+    document.getElementById("sup-term").value = "";
+    document.getElementById("mc-prev").className = "mc";
+    document.getElementById("mc-corr").className = "mc";
+    document.getElementById("btn-enviar-sup").disabled = true;
+    updateBadges();
+  });
+}
+function resetFalla(){
+  grp = ""; subgrp = "";
+  document.querySelectorAll("#gg .gc").forEach(function(c){ c.classList.remove("on"); });
+  document.getElementById("panel-subgrupo").style.display = "none";
+  document.getElementById("panel-obs").style.display = "none";
+  document.getElementById("panel-agregar").style.display = "none";
+  document.getElementById("falla-libre").value = "";
+  document.getElementById("obs-f").value = "";
+}
+
+// --- SUBGERENTE ---
+function cargarSub(){
+  apiFetch({action:"obtener", filtros:{estado:"REPORTADO"}}, function(res){
+    DB = toArray(res.datos);
+    renderSub(DB);
+    var all = toArray(res.todos||res.datos);
+    document.getElementById("ss-t").textContent = all.length;
+    document.getElementById("ss-p").textContent = all.filter(function(r){ return r.estado==="REPORTADO"; }).length;
+    document.getElementById("ss-a").textContent = all.filter(function(r){ return r.estado==="APROBADO"||r.estado==="ASIGNADO"||r.estado==="CERRADO"; }).length;
+    document.getElementById("ss-r").textContent = all.filter(function(r){ return r.estado==="RECHAZADO"; }).length;
+    document.getElementById("ss-i").textContent = all.filter(function(r){ return r.estado==="ASIGNADO"; }).length;
+    updateBadges(all);
+  });
+}
+function renderSub(data){
+  var c = document.getElementById("sub-cards"); c.innerHTML = "";
+  var pend = toArray(data).filter(function(r){ return r.estado==="REPORTADO"; });
+  if(!pend.length){ c.innerHTML = "<div class=\"empty\"><div class=\"empty-i\">Ok<" + "/div><div class=\"empty-m\">Sin fallas pendientes de validacion<" + "/div><" + "/div>"; return; }
+  pend.forEach(function(r){ c.appendChild(buildSubCard(r)); });
+}
+function buildSubCard(r){
+  var card = document.createElement("div"); card.className = "fc";
+
+  // HEADER — click to collapse (expanded by default)
+  var hdr = document.createElement("div"); hdr.className = "fc-h";
+  hdr.onclick = function(){ bod.classList.toggle("on"); };
+  var fol = document.createElement("div"); fol.className = "fc-folio"; fol.textContent = r.folio;
+  var inf = document.createElement("div"); inf.className = "fc-info";
+  var tit = document.createElement("div"); tit.className = "fc-title"; tit.textContent = r.unidad + " - " + r.terminal;
+  var met = document.createElement("div"); met.className = "fc-meta";
+  met.textContent = r.fecha + " " + r.hora + " | " + r.supervisor + " | " + r.mtto + " | " + (r.fallas?r.fallas.length:1) + " falla(s)";
+  inf.appendChild(tit); inf.appendChild(met);
+  var sb = document.createElement("span"); sb.className = "sb sb-rep"; sb.textContent = "Pendiente validacion";
+  hdr.appendChild(fol); hdr.appendChild(inf); hdr.appendChild(sb);
+  card.appendChild(hdr);
+
+  // BODY — open by default (class "on")
+  var bod = document.createElement("div"); bod.className = "fc-b on"; bod.id = "sfcb-"+r.folio;
+
+  // Fallas list
+  var fi = document.createElement("div"); fi.className = "fi"; fi.style.marginTop = "10px";
+  var fallasList = r.fallas || [{grupo:r.tipoFalla||"Falla",subfallas:[r.notas||""],obs:""}];
+  fallasList.forEach(function(f){
+    var it = document.createElement("div"); it.className = "fi-item";
+    var g = document.createElement("div"); g.className = "fi-g"; g.textContent = f.grupo + (f.subgrupo ? " \u25b8 " + f.subgrupo : "");
+    var d = document.createElement("div"); d.className = "fi-d"; d.textContent = (f.subfallas||[]).join(" / ") + (f.obs?" - "+f.obs:"");
+    it.appendChild(g); it.appendChild(d); fi.appendChild(it);
+  });
+  bod.appendChild(fi);
+
+  // ACCION SUBGERENTE
+  var acc = document.createElement("div"); acc.className = "acc acc-sub";
+
+  var at = document.createElement("div"); at.className = "acc-title"; at.textContent = "Autorizacion del Subgerente";
+  acc.appendChild(at);
+
+  // Estatus operativo — 3 botones grandes y claros
+  var elbl = document.createElement("div");
+  elbl.style.cssText = "font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;margin-bottom:8px;";
+  elbl.textContent = "1. Define el estatus operativo de la unidad:";
+  acc.appendChild(elbl);
+
+  var er = document.createElement("div");
+  er.style.cssText = "display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;";
+  [
+    {ico:"&#128994;", lbl:"Operando",            val:"Operando",            col:"#27ae60", bg:"#d4edda", bdr:"#c3e6cb"},
+    {ico:"&#128993;", lbl:"Falla administrada",  val:"Falla administrada",  col:"#856404", bg:"#fff3cd", bdr:"#ffe69c"},
+    {ico:"&#128308;", lbl:"Fuera de Operacion",  val:"Fuera de Operacion",  col:"#721c24", bg:"#f8d7da", bdr:"#f5c6cb"}
+  ].forEach(function(opt){
+    var eb = document.createElement("button");
+    eb.style.cssText = "flex:1;min-width:110px;border:2px solid "+opt.bdr+";border-radius:6px;padding:12px 8px;text-align:center;cursor:pointer;background:white;font-family:inherit;transition:all .15s;";
+    var ico = document.createElement("div"); ico.innerHTML = opt.ico; ico.style.cssText = "font-size:20px;margin-bottom:4px;";
+    var lbl = document.createElement("div"); lbl.textContent = opt.lbl; lbl.style.cssText = "font-size:11px;font-weight:700;color:#495057;";
+    eb.appendChild(ico); eb.appendChild(lbl);
+    eb.onclick = function(){
+      er.querySelectorAll("button").forEach(function(b){
+        b.style.background = "white";
+        b.style.transform = "none";
+        b.querySelector("div:last-child").style.color = "#495057";
+      });
+      eb.style.background = opt.bg;
+      eb.style.transform = "translateY(-2px)";
+      eb.style.boxShadow = "0 4px 12px rgba(0,0,0,.1)";
+      lbl.style.color = opt.col;
+      subEstSel[r.folio] = opt.val;
+      document.getElementById("sub-est-err-"+r.folio).style.display = "none";
+    };
+    er.appendChild(eb);
+  });
+  acc.appendChild(er);
+
+  var eerr = document.createElement("div"); eerr.id = "sub-est-err-"+r.folio;
+  eerr.style.cssText = "font-size:11px;color:#dc3545;margin-bottom:8px;display:none;font-weight:600;";
+  eerr.textContent = "Selecciona el estatus operativo antes de aprobar";
+  acc.appendChild(eerr);
+
+  // Observaciones
+  var olbl = document.createElement("div");
+  olbl.style.cssText = "font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;margin:8px 0 4px;";
+  olbl.textContent = "2. Observaciones para el coordinador (opcional):";
+  acc.appendChild(olbl);
+  var oi = document.createElement("input"); oi.type = "text"; oi.className = "mini-in";
+  oi.id = "sub-obs-"+r.folio; oi.placeholder = "Instrucciones, prioridad, proveedor sugerido...";
+  oi.style.marginBottom = "12px";
+  acc.appendChild(oi);
+
+  // Botones Aprobar / Rechazar
+  var br = document.createElement("div"); br.style.cssText = "display:flex;gap:8px;flex-wrap:wrap;";
+
+  var ba = document.createElement("button");
+  ba.style.cssText = "flex:1;padding:11px;font-size:12px;font-weight:700;background:#28a745;color:white;border:none;border-radius:4px;cursor:pointer;letter-spacing:.3px;";
+  ba.textContent = "Aprobar y enviar al Coordinador";
+  ba.onclick = function(){ aprobar(r.folio, r.fila); };
+
+  var brch = document.createElement("button");
+  brch.style.cssText = "padding:11px 16px;font-size:12px;font-weight:700;background:white;color:#dc3545;border:2px solid #dc3545;border-radius:4px;cursor:pointer;";
+  brch.textContent = "Rechazar";
+  brch.onclick = function(){
+    var rw = document.getElementById("rech-"+r.folio);
+    rw.style.display = rw.style.display==="block" ? "none" : "block";
+  };
+
+  br.appendChild(ba); br.appendChild(brch); acc.appendChild(br);
+
+  // Rechazo wrap
+  var rw = document.createElement("div"); rw.id = "rech-"+r.folio;
+  rw.style.cssText = "display:none;margin-top:10px;padding:10px;background:#fff3f3;border:1px solid #f5c6cb;border-radius:4px;";
+  var rta = document.createElement("textarea"); rta.className = "rech-ta";
+  rta.id = "txt-rech-"+r.folio; rta.placeholder = "Motivo del rechazo (obligatorio)..."; rta.rows = 2;
+  rta.style.cssText = "width:100%;padding:8px;border:1px solid #f5c6cb;border-radius:3px;font-family:inherit;font-size:12px;outline:none;resize:vertical;margin-bottom:6px;";
+  var rcb = document.createElement("button");
+  rcb.style.cssText = "background:#dc3545;color:white;border:none;border-radius:3px;padding:7px 14px;font-size:11px;font-weight:700;cursor:pointer;";
+  rcb.textContent = "Confirmar rechazo";
+  rcb.onclick = function(){ rechazar(r.folio, r.fila); };
+  rw.appendChild(rta); rw.appendChild(rcb); acc.appendChild(rw);
+
+  bod.appendChild(acc);
+  card.appendChild(bod);
+  return card;
+}
+function aprobar(folio, fila){
+  var est = subEstSel[folio];
+  if(!est){ document.getElementById("sub-est-err-"+folio).style.display="block"; alerta("Selecciona el estatus operativo","danger"); return; }
+  var obs = document.getElementById("sub-obs-"+folio).value.trim();
+  var sub = document.getElementById("sub-sel").value;
+  if(!sub){ alerta("Selecciona tu nombre primero","danger"); return; }
+  apiFetch({action:"actualizar", fila:fila, folio:folio, estado:"APROBADO", usuario:sub, role:"subgerente", estatusOpSub:est, obsSub:obs},
+    function(){ alerta("Aprobado correctamente - Coordinador notificado","success"); delete subEstSel[folio]; cargarSub(); setTimeout(function(){ goTab("coord"); },1000); });
+}
+function rechazar(folio, fila){
+  var mot = document.getElementById("txt-rech-"+folio).value.trim();
+  if(!mot){ alerta("Escribe el motivo del rechazo","danger"); return; }
+  var sub = document.getElementById("sub-sel").value;
+  apiFetch({action:"actualizar", fila:fila, folio:folio, estado:"RECHAZADO", usuario:sub, role:"subgerente", motivoRechazo:mot},
+    function(){ alerta("Rechazado - Supervisor notificado","warning"); cargarSub(); });
+}
+
+// --- COORDINADOR ---
+function cargarCoord(){
+  apiFetch({action:"obtener", filtros:{estado:"APROBADO"}}, function(res){
+    var apro = toArray(res.datos).filter(function(r){ return r.estado==="APROBADO"; });
+    renderCoord(apro);
+    var all = toArray(res.todos||res.datos);
+    document.getElementById("cs-a").textContent = apro.length;
+    document.getElementById("cs-c").textContent = all.filter(function(r){ return r.estado==="ASIGNADO"; }).length;
+    document.getElementById("cs-r").textContent = all.filter(function(r){ return r.cierreEstado==="reprogramar"; }).length;
+    document.getElementById("cs-x").textContent = all.filter(function(r){ return r.estado==="CERRADO"; }).length;
+    updateBadges(all);
+  });
+}
+function renderCoord(data){
+  var c = document.getElementById("coord-cards"); c.innerHTML = "";
+  if(!data.length){ c.innerHTML = "<div class=\"empty\"><div class=\"empty-i\">Ok<" + "/div><div class=\"empty-m\">Sin fallas aprobadas por asignar<" + "/div><" + "/div>"; return; }
+  data.forEach(function(r){ c.appendChild(buildCoordCard(r)); });
+}
+function buildCoordCard(r){
+  var card = document.createElement("div"); card.className = "fc";
+  var hdr = document.createElement("div"); hdr.className = "fc-h";
+  hdr.onclick = function(){ document.getElementById("cfcb-"+r.folio).classList.toggle("on"); };
+  var fol = document.createElement("div"); fol.className = "fc-folio"; fol.textContent = r.folio;
+  var inf = document.createElement("div"); inf.className = "fc-info";
+  var tit = document.createElement("div"); tit.className = "fc-title"; tit.textContent = r.unidad + " - " + r.terminal;
+  var met = document.createElement("div"); met.className = "fc-meta"; met.textContent = r.fecha + " | " + r.supervisor + (r.estatusOpSub?" | Sub: "+r.estatusOpSub:"");
+  inf.appendChild(tit); inf.appendChild(met);
+  var sb = document.createElement("span"); sb.className = "sb sb-apro"; sb.textContent = "Aprobado";
+  hdr.appendChild(fol); hdr.appendChild(inf); hdr.appendChild(sb); card.appendChild(hdr);
+  var bod = document.createElement("div"); bod.className = "fc-b"; bod.id = "cfcb-"+r.folio;
+  if(r.estatusOpSub){
+    var ctx = document.createElement("div"); ctx.style.cssText = "background:#fff3cd;border:1px solid #ffe69c;border-radius:3px;padding:8px 11px;margin:10px 0;font-size:11px;color:#856404;";
+    ctx.textContent = "Subgerente definio: " + r.estatusOpSub + (r.obsSub?" - "+r.obsSub:"");
+    bod.appendChild(ctx);
+  }
+  var acc = document.createElement("div"); acc.className = "acc acc-coord"; acc.style.marginTop = "10px";
+  var at = document.createElement("div"); at.className = "acc-title"; at.textContent = "Confirmacion FUO - Coordinador";
+  acc.appendChild(at);
+  // TICKET SISCO — obligatorio por unidad
+  var tklbl = document.createElement("div");
+  tklbl.style.cssText = "font-size:11px;font-weight:700;color:#084298;text-transform:uppercase;margin-bottom:5px;";
+  tklbl.textContent = "Numero de Ticket SISCO / Proveedor (captura al cerrar el servicio)";
+  acc.appendChild(tklbl);
+  var tkwrap = document.createElement("div");
+  tkwrap.style.cssText = "display:flex;align-items:center;gap:8px;margin-bottom:12px;";
+  var tkpfx = document.createElement("span");
+  tkpfx.style.cssText = "background:#084298;color:white;padding:8px 12px;border-radius:4px 0 0 4px;font-size:12px;font-weight:700;white-space:nowrap;";
+  tkpfx.textContent = "TICKET #";
+  var tkin = document.createElement("input"); tkin.type = "text";
+  tkin.style.cssText = "flex:1;padding:8px 10px;border:2px solid #9ec5fe;border-left:none;border-radius:0 4px 4px 0;font-size:13px;font-family:inherit;outline:none;";
+  tkin.id = "ticket-"+r.folio; tkin.placeholder = "Ej: SISCO-2026-00123";
+  tkin.oninput = function(){ chkCoord(r.folio, fallasList.length); };
+  var tkerr = document.createElement("div"); tkerr.id = "ticket-err-"+r.folio;
+  tkerr.style.cssText = "font-size:10px;color:#dc3545;display:none;margin-top:2px;";
+  tkerr.textContent = "Campo obligatorio para confirmar";
+  tkwrap.appendChild(tkpfx); tkwrap.appendChild(tkin);
+  acc.appendChild(tkwrap); acc.appendChild(tkerr);
+  if(!estSel[r.folio]) estSel[r.folio] = {};
+  var fallasList = r.fallas || [{grupo:r.tipoFalla||"Falla",subfallas:[r.notas||""],obs:""}];
+  fallasList.forEach(function(f, i){
+    var fb = document.createElement("div"); fb.className = "falla-box";
+    var fh = document.createElement("div"); fh.className = "falla-box-hdr";
+    var fn = document.createElement("span"); fn.className = "falla-box-num"; fn.textContent = "F"+(i<9?"0":"")+(i+1);
+    var ft = document.createElement("span"); ft.className = "falla-box-name"; ft.textContent = f.grupo;
+    fh.appendChild(fn); fh.appendChild(ft); fb.appendChild(fh);
+    var fd = document.createElement("div"); fd.className = "falla-box-desc"; fd.textContent = (f.subfallas||[]).join(" / ");
+    fb.appendChild(fd);
+    var mg = document.createElement("div"); mg.className = "mini-grid";
+    // Proveedor
+    var pc = document.createElement("div");
+    var pl = document.createElement("label"); pl.className = "mini-lbl"; pl.textContent = "Proveedor *";
+    var ps = document.createElement("select"); ps.className = "mini-sel"; ps.id = "cprov-"+r.folio+"-"+i;
+    var po = document.createElement("option"); po.value=""; po.textContent="-- Seleccionar --"; ps.appendChild(po);
+    PROVS.forEach(function(p){ var op=document.createElement("option");op.value=p;op.textContent=p;ps.appendChild(op); });
+    ps.onchange = function(){ chkCoord(r.folio, fallasList.length); };
+    pc.appendChild(pl); pc.appendChild(ps);
+    // Estatus
+    var ec = document.createElement("div");
+    var el2 = document.createElement("label"); el2.className = "mini-lbl"; el2.textContent = "Estatus operativo *";
+    var er = document.createElement("div"); er.style.cssText = "display:flex;gap:4px;flex-wrap:wrap;";
+    ["Operando","Falla administrada","Fuera de Operacion"].forEach(function(ev){
+      var eb = document.createElement("button");
+      eb.style.cssText = "border:1px solid #ced4da;border-radius:3px;padding:5px 8px;font-size:10px;font-weight:700;color:#6c757d;cursor:pointer;background:white;font-family:inherit;";
+      eb.textContent = ev === "Falla administrada" ? "Falla adm." : ev;
+      eb.onclick = function(){
+        er.querySelectorAll("button").forEach(function(b){ b.style.borderColor="#ced4da";b.style.color="#6c757d";b.style.background="white"; });
+        var col = ev==="Operando"?"#27ae60":ev==="Fuera de Operacion"?"#dc3545":"#ffc107";
+        var bg = ev==="Operando"?"#d4edda":ev==="Fuera de Operacion"?"#f8d7da":"#fff3cd";
+        eb.style.borderColor=col; eb.style.color=col; eb.style.background=bg;
+        if(!estSel[r.folio]) estSel[r.folio]={};
+        estSel[r.folio][i] = ev;
+        var eck = document.getElementById("chk-est-"+r.folio+"-"+i);
+        if(eck){ eck.className="mck ok"; eck.textContent="Estatus OK"; }
+        chkCoord(r.folio, fallasList.length);
+      };
+      er.appendChild(eb);
+    });
+    ec.appendChild(el2); ec.appendChild(er);
+    mg.appendChild(pc); mg.appendChild(ec); fb.appendChild(mg);
+    var mc = document.createElement("div"); mc.className = "mini-chk";
+    var mkp = document.createElement("span"); mkp.id="chk-prov-"+r.folio+"-"+i; mkp.className="mck"; mkp.textContent="Sin proveedor";
+    var mke = document.createElement("span"); mke.id="chk-est-"+r.folio+"-"+i; mke.className="mck"; mke.textContent="Sin estatus";
+    mc.appendChild(mkp); mc.appendChild(mke); fb.appendChild(mc);
+    // Obs
+    var ol2 = document.createElement("label"); ol2.className="mini-lbl"; ol2.style.marginTop="6px"; ol2.textContent="Observaciones";
+    var oi2 = document.createElement("input"); oi2.type="text"; oi2.className="mini-in"; oi2.id="cobs-"+r.folio+"-"+i; oi2.placeholder="Cita, instrucciones..."; oi2.style.marginTop="4px";
+    fb.appendChild(ol2); fb.appendChild(oi2);
+    acc.appendChild(fb);
+  });
+  // Checklist
+  var chk = document.createElement("div"); chk.className = "chklist";
+  var c1 = document.createElement("div"); c1.className = "chi done"; c1.textContent = "FUO actualizado manualmente";
+  var c2 = document.createElement("div"); c2.className = "chi"; c2.id = "chki-todas-"+r.folio; c2.textContent = "Todas las fallas con proveedor y estatus";
+  chk.appendChild(c1); chk.appendChild(c2); acc.appendChild(chk);
+  var breg = document.createElement("button"); breg.className = "btn btn-primary"; breg.id = "breg-"+r.folio;
+  breg.disabled = true; breg.textContent = "Completa todos los campos para confirmar";
+  breg.onclick = function(){ confirmarCoord(r.folio, r.fila, fallasList.length); };
+  acc.appendChild(breg); bod.appendChild(acc); card.appendChild(bod);
+  return card;
+}
+function chkCoord(folio, n){
+  var ok = true;
+  for(var i=0;i<n;i++){
+    var pv = document.getElementById("cprov-"+folio+"-"+i);
+    var pval = pv ? pv.value : "";
+    var ev = estSel[folio] ? estSel[folio][i] : "";
+    var cp = document.getElementById("chk-prov-"+folio+"-"+i);
+    if(cp){ cp.className="mck"+(pval?" ok":""); cp.textContent=pval?"Proveedor OK":"Sin proveedor"; }
+    if(!pval||!ev) ok=false;
+  }
+  // Ticket SISCO — se captura al cierre, no bloquea la asignacion
+  var tkel = document.getElementById("ticket-"+folio);
+  var tkval = tkel ? tkel.value.trim() : "";
+  if(tkel) tkel.style.borderColor = "#9ec5fe"; // neutral
+  // Checklist general
+  var ct = document.getElementById("chki-todas-"+folio);
+  if(ct){ ct.className="chi"+(ok?" done":""); ct.textContent="Todas las fallas con proveedor y estatus asignados"; }
+  var btn = document.getElementById("breg-"+folio);
+  if(!btn) return;
+  btn.disabled = !ok;
+  if(ok) btn.textContent = "Confirmar y notificar a Gerencias";
+  else {
+    var faltantes = [];
+    for(var j=0;j<n;j++){
+      var pj=document.getElementById("cprov-"+folio+"-"+j);
+      if(!pj||!pj.value) faltantes.push("proveedor F"+(j+1));
+      if(!estSel[folio]||!estSel[folio][j]) faltantes.push("estatus F"+(j+1));
+    }
+    btn.textContent = "Falta: " + faltantes.slice(0,3).join(", ");
+  }
+}
+function confirmarCoord(folio, fila, n){
+  var coord = document.getElementById("coord-sel").value;
+  if(!coord){ alerta("Selecciona tu nombre primero","danger"); return; }
+  var fallasDatos = [];
+  var ok = true;
+  for(var i=0;i<n;i++){
+    var pv = document.getElementById("cprov-"+folio+"-"+i);
+    var pval = pv ? pv.value : "";
+    var ev = estSel[folio] ? estSel[folio][i] : "";
+    if(!pval||!ev){ ok=false; break; }
+    var obs = document.getElementById("cobs-"+folio+"-"+i);
+    fallasDatos.push({idx:i, proveedor:pval, estatusOp:ev, obsCoord:obs?obs.value.trim():""});
+  }
+  if(!ok){ alerta("Asigna proveedor y estatus a todas las fallas","danger"); return; }
+  var ticket = document.getElementById("ticket-"+folio) ? document.getElementById("ticket-"+folio).value.trim() : "";
+  apiFetch({action:"actualizar", fila:fila, folio:folio, estado:"ASIGNADO", usuario:coord, role:"coordinador", fallasDatos:fallasDatos, ticketSisco:ticket},
+    function(res){ alerta("Confirmado - Ticket: "+ticket+" - Gerencias notificadas","success"); delete estSel[folio]; cargarCoord(); setTimeout(function(){ goTab("ger"); },900); });
+}
+
+// --- GERENCIAS ---
+var DB_GER = [];
+function cargarGer(){
+  apiFetch({action:"obtener", filtros:{}}, function(res){
+    DB_GER = toArray(res.todos||res.datos);
+    document.getElementById("g-t").textContent = DB_GER.length;
+    document.getElementById("g-p").textContent = DB_GER.filter(function(r){ return r.estado==="REPORTADO"; }).length;
+    document.getElementById("g-a").textContent = DB_GER.filter(function(r){ return r.estado==="APROBADO"; }).length;
+    document.getElementById("g-c").textContent = DB_GER.filter(function(r){ return r.estado==="ASIGNADO"; }).length;
+    document.getElementById("g-x").textContent = DB_GER.filter(function(r){ return r.estado==="CERRADO"; }).length;
+    document.getElementById("g-tot").textContent = DB_GER.length;
+    filtrar();
+    // WA log
+    var wl = document.getElementById("wa-log"); wl.innerHTML = "";
+    if(res.waLog && res.waLog.length){
+      res.waLog.forEach(function(w){
+        var d = document.createElement("div"); d.className = "wa-item";
+        var t = document.createElement("div"); t.className = "wa-time"; t.textContent = w.hora;
+        var m = document.createElement("div"); m.textContent = w.mensaje;
+        d.appendChild(t); d.appendChild(m); wl.appendChild(d);
+      });
+    } else {
+      wl.innerHTML = "<div style=\"color:#adb5bd;font-size:12px;padding:8px;\">Sin notificaciones aun<" + "/div>";
+    }
+    updateBadges(DB_GER);
+  });
+}
+function filtrar(){
+  var fu = (document.getElementById("fi-u").value||"").toLowerCase();
+  var ft = document.getElementById("fi-t").value||"";
+  var fe = document.getElementById("fi-e").value||"";
+  var res = DB_GER.filter(function(r){
+    if(fu && r.unidad.toLowerCase().indexOf(fu)<0) return false;
+    if(ft && r.terminal!==ft) return false;
+    if(fe && r.estado!==fe) return false;
+    return true;
+  });
+  document.getElementById("g-cnt").textContent = res.length;
+  var sb = {"REPORTADO":"sb-rep","APROBADO":"sb-apro","ASIGNADO":"sb-asig","CERRADO":"sb-cerr","RECHAZADO":"sb-rech"};
+  var tbody = document.getElementById("ger-tbody"); tbody.innerHTML = "";
+  res.forEach(function(r){
+    var tr = document.createElement("tr");
+    var fallasList = r.fallas||[{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
+    var fallasStr = fallasList.map(function(f){ return f.grupo+(f.proveedor?" -> "+f.proveedor:""); }).join(" | ");
+    var provStr = fallasList.filter(function(f){ return f.proveedor; }).map(function(f){ return f.proveedor; }).join(" / ")||r.proveedor||"-";
+    var estStr = fallasList.filter(function(f){ return f.estatusOp; }).map(function(f){ return f.estatusOp; }).join(" / ")||r.estatusOp||"-";
+    [r.folio,r.unidad,r.terminal,r.mtto||"-",r.supervisor,fallasStr,provStr,estStr].forEach(function(val,i){
+      var td = document.createElement("td"); td.textContent = val; tr.appendChild(td);
+    });
+    var tdst = document.createElement("td");
+    var sp = document.createElement("span"); sp.className="sb "+(sb[r.estado]||""); sp.textContent=r.estado;
+    tdst.appendChild(sp); tr.appendChild(tdst);
+    tbody.appendChild(tr);
+  });
+}
+function limpiarFilt(){ document.getElementById("fi-u").value=""; document.getElementById("fi-t").value=""; document.getElementById("fi-e").value=""; filtrar(); }
+function exportar(){
+  if(!DB_GER.length){ alerta("Sin datos para exportar","warning"); return; }
+  var rows = ['"Folio","Unidad","Terminal","Supervisor","Tipo","Estado","Proveedor","EstatusOp"'];
+  DB_GER.forEach(function(r){
+    rows.push([r.folio,r.unidad,r.terminal,r.supervisor,r.mtto||"",r.estado,r.proveedor||"",r.estatusOp||""].map(function(v){ return "\""+String(v).replace(/"/g,"\"\"")+"\""; }).join(","));
+  });
+  var blob = new Blob([String.fromCharCode(65279)+rows.join("\n")],{type:"text/csv;charset=utf-8"});
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement("a"); a.href=url; a.download="Fallas_III_Servicios.csv"; a.click();
+  URL.revokeObjectURL(url);
+  alerta("CSV exportado","success");
+}
+
+// --- CIERRE ---
+function cargarCierre(){
+  var sup = document.getElementById("cierre-sup-sel").value;
+  if(!sup) return;
+  apiFetch({action:"obtener", filtros:{estado:"ASIGNADO", supervisor:sup}}, function(res){
+    var asig = toArray(res.datos).filter(function(r){ return r.estado==="ASIGNADO"; });
+    document.getElementById("ci-t").textContent = asig.length;
+    document.getElementById("ci-o").textContent = asig.filter(function(r){ return r.cierreEstado==="atendida"; }).length;
+    document.getElementById("ci-p").textContent = asig.filter(function(r){ return r.cierreEstado==="pendiente"; }).length;
+    document.getElementById("ci-r").textContent = asig.filter(function(r){ return r.cierreEstado==="reprogramar"; }).length;
+    renderCierre(asig);
+    updateBadges(res.todos||asig);
+  });
+}
+function renderCierre(data){
+  var c = document.getElementById("cierre-cards"); c.innerHTML = "";
+  if(!data.length){ c.innerHTML="<div class=\"empty\"><div class=\"empty-i\">Ok<" + "/div><div class=\"empty-m\">No hay fallas asignadas aun<" + "/div><" + "/div>";
+    document.getElementById("btn-cierre-enviar").disabled=true; return; }
+  data.forEach(function(r){ c.appendChild(buildCierreCard(r)); });
+  checkCierreBtn(data);
+}
+function buildCierreCard(r){
+  var card = document.createElement("div"); card.className="fc";
+  // Header
+  var hdr = document.createElement("div"); hdr.className="fc-h";
+  hdr.onclick = function(){ bod.classList.toggle("on"); };
+  var fol = document.createElement("div"); fol.className="fc-folio"; fol.textContent=r.folio;
+  var inf = document.createElement("div"); inf.className="fc-info";
+  var tit = document.createElement("div"); tit.className="fc-title"; tit.textContent=r.unidad+" - "+r.terminal;
+  var met = document.createElement("div"); met.className="fc-meta";
+  met.textContent=(r.proveedor||"-")+" | "+(r.estatusOp||"-")+(r.ticketSisco?" | Ticket: "+r.ticketSisco:"");
+  inf.appendChild(tit); inf.appendChild(met);
+  var est = cierreSel[r.folio]||"sin";
+  var sbcls = {sin:"sb-rep",atendida:"sb-apro",pendiente:"sb-asig",reprogramar:"sb-rech"};
+  var sblbl = {sin:"Sin marcar",atendida:"Concluida",pendiente:"Pendiente",reprogramar:"Reprogramar"};
+  var sb = document.createElement("span"); sb.className="sb "+(sbcls[est]); sb.id="ci-tag-"+r.folio; sb.textContent=sblbl[est];
+  hdr.appendChild(fol); hdr.appendChild(inf); hdr.appendChild(sb); card.appendChild(hdr);
+  // Body — open by default
+  var bod = document.createElement("div"); bod.className="fc-b on"; bod.id="cifcb-"+r.folio;
+  // Fallas list
+  var fi = document.createElement("div"); fi.className="fi"; fi.style.marginTop="10px";
+  var fallasList = r.fallas||[{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
+  fallasList.forEach(function(f){
+    var it=document.createElement("div"); it.className="fi-item";
+    var g=document.createElement("div"); g.className="fi-g"; g.textContent=f.grupo+(f.subgrupo?" ▸ "+f.subgrupo:"");
+    var d=document.createElement("div"); d.className="fi-d"; d.textContent=(f.subfallas||[]).join(" / ")+(f.proveedor?" | "+f.proveedor:"");
+    it.appendChild(g); it.appendChild(d); fi.appendChild(it);
+  });
+  bod.appendChild(fi);
+  // Accion cierre
+  var acc = document.createElement("div"); acc.className="acc acc-cierre";
+  var at = document.createElement("div"); at.className="acc-title"; at.textContent="Resultado de atencion del turno";
+  acc.appendChild(at);
+  // 3 opciones
+  var crow = document.createElement("div"); crow.style.cssText="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;";
+  [
+    {ico:"&#9989;",lbl:"Concluida",val:"atendida",col:"#155724",bg:"#d4edda",bdr:"#c3e6cb"},
+    {ico:"&#128336;",lbl:"Pendiente",val:"pendiente",col:"#856404",bg:"#fff3cd",bdr:"#ffe69c"},
+    {ico:"&#8635;",lbl:"Reprogramar",val:"reprogramar",col:"#721c24",bg:"#f8d7da",bdr:"#f5c6cb"}
+  ].forEach(function(opt){
+    var cb = document.createElement("button");
+    cb.style.cssText="flex:1;min-width:90px;border:2px solid "+opt.bdr+";border-radius:5px;padding:11px 8px;text-align:center;cursor:pointer;background:"+(est===opt.val?opt.bg:"white")+";font-family:inherit;";
+    var ico=document.createElement("div"); ico.innerHTML=opt.ico; ico.style.cssText="font-size:18px;margin-bottom:3px;";
+    var lbl=document.createElement("div"); lbl.textContent=opt.lbl; lbl.style.cssText="font-size:11px;font-weight:700;color:"+(est===opt.val?opt.col:"#495057")+";";
+    cb.appendChild(ico); cb.appendChild(lbl);
+    cb.onclick=(function(o,btn,lbl_el){return function(){ setCierre(r.folio,o.val,crow,btn,lbl_el,o); };})(opt,cb,lbl);
+    crow.appendChild(cb);
+  });
+  acc.appendChild(crow);
+  // Foto obligatoria para concluidas
+  var fotoWrap = document.createElement("div"); fotoWrap.id="foto-wrap-"+r.folio;
+  fotoWrap.style.cssText="display:"+(est==="atendida"?"block":"none")+";margin-bottom:10px;padding:10px;background:#d4edda;border:1px solid #c3e6cb;border-radius:4px;";
+  var flbl=document.createElement("div"); flbl.style.cssText="font-size:11px;font-weight:700;color:#155724;margin-bottom:6px;"; flbl.textContent="Evidencia fotografica obligatoria:";
+  var finp=document.createElement("input"); finp.type="file"; finp.accept="image/*"; finp.id="foto-"+r.folio;
+  finp.style.cssText="width:100%;font-size:12px;";
+  finp.onchange=function(){ chkFoto(r.folio); };
+  var ferr=document.createElement("div"); ferr.id="foto-err-"+r.folio;
+  ferr.style.cssText="font-size:10px;color:#dc3545;margin-top:4px;display:none;"; ferr.textContent="La foto es obligatoria para marcar como Concluida";
+  fotoWrap.appendChild(flbl); fotoWrap.appendChild(finp); fotoWrap.appendChild(ferr);
+  acc.appendChild(fotoWrap);
+  // Motivo para pendiente/reprogramar
+  var xf = document.createElement("div"); xf.id="xf-"+r.folio;
+  xf.style.cssText="display:"+(est!=="atendida"&&est!=="sin"?"block":"none")+";margin-bottom:10px;";
+  var xmlbl=document.createElement("div"); xmlbl.style.cssText="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;margin-bottom:4px;"; xmlbl.textContent="Motivo:";
+  var ms = document.createElement("select"); ms.className="mini-sel"; ms.id="ci-mot-"+r.folio;
+  ["-- Seleccionar motivo --","En espera de refaccion","Proveedor no se presento","Unidad requerida en operacion urgente","Taller sin disponibilidad","Pendiente diagnostico","Cambio de proveedor necesario","Otro"].forEach(function(op){ var o=document.createElement("option");o.textContent=op;ms.appendChild(o); });
+  xf.appendChild(xmlbl); xf.appendChild(ms); acc.appendChild(xf);
+  // Observaciones libres
+  var oblbl=document.createElement("div"); oblbl.style.cssText="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;margin:8px 0 4px;"; oblbl.textContent="Observaciones del supervisor:";
+  var obinp=document.createElement("input"); obinp.type="text"; obinp.className="mini-in"; obinp.id="ci-obs-"+r.folio; obinp.placeholder="Detalles adicionales del cierre...";
+  acc.appendChild(oblbl); acc.appendChild(obinp);
+  bod.appendChild(acc); card.appendChild(bod);
+  return card;
+}
+function chkFoto(folio){
+  var finp = document.getElementById("foto-"+folio);
+  var ferr = document.getElementById("foto-err-"+folio);
+  if(finp && finp.files.length>0 && ferr) ferr.style.display="none";
+}
+function setCierre(folio, estado, crow, btn, lbl_el, opt){
+  cierreSel[folio] = estado;
+  // Reset all buttons visually
+  crow.querySelectorAll("button").forEach(function(b){
+    b.style.background="white";
+    b.style.borderColor="#ced4da";
+    if(b.querySelector("div:last-child")) b.querySelector("div:last-child").style.color="#495057";
+  });
+  // Highlight selected
+  btn.style.background = opt.bg;
+  btn.style.borderColor = opt.bdr;
+  if(lbl_el) lbl_el.style.color = opt.col;
+  // Update tag
+  var tag = document.getElementById("ci-tag-"+folio);
+  var sbcls = {atendida:"sb sb-apro",pendiente:"sb sb-asig",reprogramar:"sb sb-rech"};
+  var sblbl = {atendida:"Concluida",pendiente:"Pendiente",reprogramar:"Reprogramar"};
+  if(tag){ tag.className=sbcls[estado]; tag.textContent=sblbl[estado]; }
+  // Show/hide foto and motivo
+  var fw = document.getElementById("foto-wrap-"+folio);
+  if(fw) fw.style.display = (estado==="atendida") ? "block" : "none";
+  var xf = document.getElementById("xf-"+folio);
+  if(xf) xf.style.display = (estado!=="atendida"&&estado!=="sin") ? "block" : "none";
+  // Update stats
+  document.getElementById("ci-o").textContent = Object.values(cierreSel).filter(function(e){ return e==="atendida"; }).length;
+  document.getElementById("ci-p").textContent = Object.values(cierreSel).filter(function(e){ return e==="pendiente"; }).length;
+  document.getElementById("ci-r").textContent = Object.values(cierreSel).filter(function(e){ return e==="reprogramar"; }).length;
+  checkCierreBtn(null);
+}
+function checkCierreBtn(data){
+  var total = data ? data.length : parseInt(document.getElementById("ci-t").textContent)||0;
+  var marcadas = Object.keys(cierreSel).length;
+  document.getElementById("btn-cierre-enviar").disabled = total===0||marcadas<total;
+}
+function enviarCierre(){
+  var sup = document.getElementById("cierre-sup-sel").value;
+  var turno = document.getElementById("cierre-turno").value;
+  if(!sup){ alerta("Selecciona tu nombre","danger"); return; }
+  // Validar fotos obligatorias para concluidas
+  var sinFoto = [];
+  Object.keys(cierreSel).forEach(function(f){
+    if(cierreSel[f]==="atendida"){
+      var finp = document.getElementById("foto-"+f);
+      if(!finp||!finp.files||!finp.files.length){
+        sinFoto.push(f);
+        var ferr = document.getElementById("foto-err-"+f);
+        if(ferr) ferr.style.display="block";
+      }
+    }
+  });
+  if(sinFoto.length){ alerta("Agrega foto de evidencia a: "+sinFoto.join(", "),"danger"); return; }
+  var cierreData = Object.keys(cierreSel).map(function(f){
+    var mot = document.getElementById("ci-mot-"+f);
+    var obs = document.getElementById("ci-obs-"+f);
+    return {
+      folio: f,
+      estado: cierreSel[f],
+      motivo: mot&&mot.value!=="-- Seleccionar motivo --"?mot.value:"",
+      observaciones: obs?obs.value.trim():""
+    };
+  });
+  var concluidas = cierreData.filter(function(c){ return c.estado==="atendida"; }).length;
+  var pendientes = cierreData.filter(function(c){ return c.estado==="pendiente"; }).length;
+  var reprogramar = cierreData.filter(function(c){ return c.estado==="reprogramar"; }).length;
+  apiFetch({action:"cerrar-dia", payload:{supervisor:sup, turno:turno, cierres:cierreData, resumen:{concluidas:concluidas,pendientes:pendientes,reprogramar:reprogramar}}},
+    function(res){
+      alerta("Cierre enviado - "+concluidas+" concluidas, "+pendientes+" pendientes, "+reprogramar+" a reprogramar","success");
+      cierreSel={};
+      cargarCierre();
+      setTimeout(function(){ goTab("coord"); },1200);
+    });
+}
+
+// --- HISTORIAL ---
+function cargarHistorial(){
+  apiFetch({action:"obtener", filtros:{historial:true}}, function(res){
+    var todos = res.todos||res.datos||[];
+    var tbody = document.getElementById("hist-tbody"); tbody.innerHTML="";
+    var sb = {"REPORTADO":"sb-rep","APROBADO":"sb-apro","ASIGNADO":"sb-asig","CERRADO":"sb-cerr","RECHAZADO":"sb-rech"};
+    todos.forEach(function(r){
+      var tr = document.createElement("tr");
+      var fl = r.fallas||[{grupo:r.tipoFalla||""}];
+      [r.folio,r.fecha,r.unidad,r.terminal,r.supervisor,r.mtto||"-",fl.map(function(f){return f.grupo;}).join(" / "),r.aprobadoPor||"-",r.proveedor||"-",r.estatusOp||"-"].forEach(function(val){
+        var td=document.createElement("td");td.textContent=val;tr.appendChild(td);
+      });
+      var tdst=document.createElement("td"); var sp=document.createElement("span"); sp.className="sb "+(sb[r.estado]||""); sp.textContent=r.estado; tdst.appendChild(sp); tr.appendChild(tdst);
+      tbody.appendChild(tr);
+    });
+  });
+}
+
+// --- BADGES ---
+function updateBadges(all){
+  if(!all) return;
+  document.getElementById("b-sub").textContent = all.filter(function(r){ return r.estado==="REPORTADO"; }).length;
+  document.getElementById("b-coord").textContent = all.filter(function(r){ return r.estado==="APROBADO"; }).length;
+  document.getElementById("b-cierre").textContent = all.filter(function(r){ return r.estado==="ASIGNADO"; }).length;
+  document.getElementById("b-ger").textContent = all.length;
+}
+
+function toggleDemo(){
+  DEMO_MODE = !DEMO_MODE;
+  var btn = document.getElementById("demo-btn");
+  btn.textContent = "MODO DEMO: " + (DEMO_MODE?"ON":"OFF");
+  btn.style.background = DEMO_MODE ? "rgba(255,200,0,.35)" : "rgba(255,255,255,.15)";
+  btn.style.borderColor = DEMO_MODE ? "rgba(255,200,0,.7)" : "rgba(255,255,255,.4)";
+  if(DEMO_MODE) alerta("Modo demo activado — los datos no se guardan en Sheets", "info");
+  else alerta("Modo demo desactivado — conectando al backend real", "info");
+}
+if(!Array.prototype.findIndex){
+  Array.prototype.findIndex = function(fn){ for(var i=0;i<this.length;i++){ if(fn(this[i],i,this)) return i; } return -1; };
+}
+
+function cierreDiaCoord(){
+  var coord = document.getElementById("coord-sel").value;
+  if(!coord){ alerta("Selecciona tu nombre de coordinador primero","danger"); return; }
+  apiFetch({action:"obtener", filtros:{}}, function(res){
+    var todos = toArray(res.todos||res.datos);
+    var cerradas = todos.filter(function(r){ return r.estado==="CERRADO"; });
+    var abiertas = todos.filter(function(r){ return r.estado==="ASIGNADO"||r.estado==="APROBADO"||r.estado==="REPORTADO"; });
+    var detalleCerradas = cerradas.map(function(r){
+      return {folio:r.folio, unidad:r.unidad, terminal:r.terminal, proveedor:r.proveedor||"-", ticketSisco:r.ticketSisco||"-", resultado:"CERRADA"};
+    });
+    var detalleAbiertas = abiertas.map(function(r){
+      return {folio:r.folio, unidad:r.unidad, terminal:r.terminal, proveedor:r.proveedor||"Sin asignar", estado:r.estado, notas:"Se arrastra al siguiente dia"};
+    });
+    var msg = "Cierre del dia - Coordinador: "+coord+" | Cerradas: "+cerradas.length+" | Abiertas: "+abiertas.length;
+    apiFetch({action:"cierre-dia-coord", payload:{coordinador:coord, fechaCierre:new Date().toLocaleDateString("es-MX"), cerradas:detalleCerradas, abiertas:detalleAbiertas, resumen:{cerradas:cerradas.length, abiertas:abiertas.length}}},
+      function(){ alerta("Cierre del dia generado - "+cerradas.length+" cerradas, "+abiertas.length+" abiertas arrastradas al siguiente dia","success"); cargarCoord(); setTimeout(function(){ goTab("ger"); },1200); });
+  });
+}
+
+// AUTO-REFRESH cada 60 seg cuando el tab de subgerente o coordinador esta activo
+setInterval(function(){
+  var activeTab = document.querySelector(".nav-tab.active");
+  if(!activeTab) return;
+  var t = activeTab.id.replace("tab-","");
+  if(t==="sub") cargarSub();
+  if(t==="coord") cargarCoord();
+  if(t==="ger") cargarGer();
+},60000);
+</script>
 </body>
 </html>
