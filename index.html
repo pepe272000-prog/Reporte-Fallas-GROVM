@@ -854,7 +854,7 @@ function supEnviar(){
     hora: new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})
   };
   apiFetch(payload, function(res){
-    alerta("Reporte enviado - Folio: " + res.folio, "success");
+    alerta("Reporte enviado - Folio: " + (res.folio || (res.datos && res.datos.folio) || "OK"), "success");
     fallas = []; mtto = ""; renderRL(); resetFalla();
     document.getElementById("unit-num").value = "";
     document.getElementById("sup-term").value = "";
