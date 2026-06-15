@@ -845,11 +845,13 @@ function supEnviar(){
   if(!fallas.length){ alerta("Agrega al menos una falla", "danger"); return; }
   var payload = {
     action: "guardar",
-    payload: {
-      supervisor: sup, unidad: pfx + num, terminal: term, mtto: mtto,
-      fallas: fallas, fecha: new Date().toLocaleDateString("es-MX"),
-      hora: new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})
-    }
+    supervisor: sup,
+    unidad: pfx + num,
+    terminal: term,
+    mtto: mtto,
+    fallas: fallas,
+    fecha: new Date().toLocaleDateString("es-MX"),
+    hora: new Date().toLocaleTimeString("es-MX",{hour:"2-digit",minute:"2-digit"})
   };
   apiFetch(payload, function(res){
     alerta("Reporte enviado - Folio: " + res.folio, "success");
