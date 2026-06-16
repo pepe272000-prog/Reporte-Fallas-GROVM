@@ -18,9 +18,23 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .nav-tab{padding:12px 20px;font-size:12px;font-weight:600;color:#6c757d;cursor:pointer;border:none;background:transparent;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;border-bottom:2px solid transparent;margin-bottom:-2px;transition:all .2s;}
 .nav-tab:hover{color:#667eea;}
 .nav-tab.active{color:#667eea;border-bottom-color:#667eea;background:white;}
+.nav-tab.hidden-rol{display:none;}
 .badge{background:#dc3545;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;}
 .badge.green{background:#27ae60;}
 .badge.blue{background:#2980b9;}
+
+/* IDENTIFICACION DE USUARIO (filtro de seguridad por rol) */
+.id-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;}
+.id-overlay.off{display:none;}
+.id-box{background:white;border-radius:10px;padding:32px;max-width:420px;width:100%;box-shadow:0 10px 40px rgba(0,0,0,.25);}
+.id-box h2{font-size:18px;color:#2c3e50;margin-bottom:6px;}
+.id-box p{font-size:12px;color:#6c757d;margin-bottom:20px;}
+.id-sel{width:100%;padding:12px;font-size:14px;border:2px solid #e9ecef;border-radius:6px;margin-bottom:14px;}
+.id-rol-tag{font-size:11px;font-weight:700;color:#27ae60;background:#eafaf1;border:1px solid #c8f0d8;border-radius:4px;padding:8px 10px;margin-bottom:16px;display:none;}
+.id-btn{width:100%;padding:13px;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);color:white;border:none;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;text-transform:uppercase;letter-spacing:.5px;}
+.id-btn:disabled{opacity:.5;cursor:not-allowed;}
+.cur-user-bar{font-size:11px;color:rgba(255,255,255,.85);display:flex;align-items:center;gap:8px;}
+.cur-user-bar button{font-size:10px;padding:4px 8px;border:1px solid rgba(255,255,255,.4);border-radius:3px;background:rgba(255,255,255,.15);color:white;cursor:pointer;}
 
 /* VIEWS */
 .view{display:none;padding:24px;}
@@ -271,6 +285,22 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
 <div id="alert-container"></div>
 <div class="loader-overlay" id="loader"><div class="spinner"></div><span style="font-size:12px;color:#667eea;font-weight:600;">Conectando con Google Sheets...</span></div>
 
+<!-- IDENTIFICACION DE USUARIO — filtro de seguridad: cada persona solo
+     ve el(los) tab(s) que le corresponden segun su rol real. Se valida
+     contra la misma tabla de USUARIOS que usa el backend (sección 6 del
+     archivo maestro). -->
+<div class="id-overlay" id="id-overlay">
+  <div class="id-box">
+    <h2>Identifícate para continuar</h2>
+    <p>Selecciona tu nombre. El sistema mostrará únicamente las secciones que correspondan a tu rol.</p>
+    <select class="id-sel" id="id-sel" onchange="onIdSel()">
+      <option value="">-- Selecciona tu nombre --</option>
+    </select>
+    <div class="id-rol-tag" id="id-rol-tag"></div>
+    <button class="id-btn" id="id-btn" onclick="confirmarIdentidad()" disabled>Entrar al sistema</button>
+  </div>
+</div>
+
 <div class="container">
   <div class="header">
     <div>
@@ -278,6 +308,10 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
       <p>Backend conectado a Google Sheets en tiempo real</p>
     </div>
     <div style="display:flex;align-items:center;gap:12px;">
+      <div class="cur-user-bar" id="cur-user-bar" style="display:none;">
+        <span id="cur-user-txt"></span>
+        <button onclick="cambiarUsuario()">Cambiar</button>
+      </div>
       <div class="hdr-fecha" id="hdr-fecha"></div>
       <button id="demo-btn" onclick="toggleDemo()" style="font-size:10px;font-weight:700;padding:5px 10px;border:1px solid rgba(255,255,255,.4);border-radius:3px;background:rgba(255,255,255,.15);color:white;cursor:pointer;letter-spacing:.5px;">MODO DEMO: OFF</button>
     </div>
@@ -591,8 +625,123 @@ var waLog = [];
 var pfx = "PMX", mtto = "", grp = "", sfs = [], fallas = [];
 var estSel = {}, subEstSel = {}, cierreSel = {};
 
+// ===================================================
+// FILTRO DE SEGURIDAD POR ROL — identificación de usuario
+// Espejo de la tabla USUARIOS (sección 6 del archivo maestro).
+// Si se agrega o cambia gente en la hoja USUARIOS, actualizar
+// también esta lista para que el filtro de tabs siga siendo
+// correcto (no se consulta el Sheet en vivo desde el HTML).
+// ===================================================
+var USUARIOS_SISTEMA = [
+  {nombre:"Ing. Jose Antonio Hernandez", rol:"GERENTE"},
+  {nombre:"Ing. Marco Anibal Chavez", rol:"SUBGERENTE"},
+  {nombre:"Ing. Gerardo Balino Magana", rol:"SUBGERENTE"},
+  {nombre:"Ing. Eder Emanuel Valdez", rol:"COORDINADOR"},
+  {nombre:"Ing. Alberto Amador", rol:"SUBGERENTE MANTENIMIENTO"},
+  {nombre:"Ing. Javier Zarate", rol:"GERENTE MANTENIMIENTO"},
+  {nombre:"Sergio A. Garcia", rol:"COORDINADOR"},
+  {nombre:"Ivan Fernando Reyes González", rol:"SUPERVISOR"},
+  {nombre:"Julio Ricardo Castillo Luna", rol:"SUPERVISOR"},
+  {nombre:"Carlos Salvador Baez Díaz", rol:"SUPERVISOR"},
+  {nombre:"Gabriel Alvarez Sánchez", rol:"SUPERVISOR"},
+  {nombre:"Alejo Carmona Barradas", rol:"SUPERVISOR"},
+  {nombre:"Andres Ignacio Reyes Silva", rol:"SUPERVISOR"},
+  {nombre:"Jesus Salvador de la Cruz Hernández", rol:"SUPERVISOR"},
+  {nombre:"Ricardo Arturo Neri Trejo", rol:"SUPERVISOR"}
+];
+
+// Mapa rol → tabs visibles. "historial" se agrega a todos por ser
+// de solo consulta y no representar riesgo de accion fuera de etapa.
+var TABS_POR_ROL = {
+  "SUPERVISOR": ["sup","cierre"],
+  "SUBGERENTE": ["sub"],
+  "SUBGERENTE MANTENIMIENTO": ["sub"],
+  "COORDINADOR": ["coord"],
+  "GERENTE": ["ger"],
+  "GERENTE MANTENIMIENTO": ["ger"]
+};
+var TODOS_LOS_TABS = ["sup","sub","coord","ger","cierre","historial"];
+
+var usuarioActual = null; // {nombre, rol}
+
+function poblarSelectIdentidad(){
+  var sel = document.getElementById("id-sel");
+  USUARIOS_SISTEMA.forEach(function(u){
+    var o = document.createElement("option");
+    o.value = u.nombre; o.textContent = u.nombre + " — " + u.rol;
+    sel.appendChild(o);
+  });
+}
+function onIdSel(){
+  var nombre = document.getElementById("id-sel").value;
+  var tag = document.getElementById("id-rol-tag");
+  var btn = document.getElementById("id-btn");
+  if(!nombre){ tag.style.display="none"; btn.disabled=true; return; }
+  var u = USUARIOS_SISTEMA.find(function(x){ return x.nombre===nombre; });
+  if(!u){ tag.style.display="none"; btn.disabled=true; return; }
+  tag.textContent = "Rol detectado: " + u.rol;
+  tag.style.display = "block";
+  btn.disabled = false;
+}
+function confirmarIdentidad(){
+  var nombre = document.getElementById("id-sel").value;
+  var u = USUARIOS_SISTEMA.find(function(x){ return x.nombre===nombre; });
+  if(!u) return;
+  usuarioActual = u;
+  try{ sessionStorage.setItem("usuarioActual", JSON.stringify(u)); }catch(e){}
+  aplicarFiltroDeRol(u);
+  document.getElementById("id-overlay").classList.add("off");
+  var bar = document.getElementById("cur-user-bar");
+  bar.style.display = "flex";
+  document.getElementById("cur-user-txt").textContent = u.nombre + " (" + u.rol + ")";
+}
+function cambiarUsuario(){
+  try{ sessionStorage.removeItem("usuarioActual"); }catch(e){}
+  usuarioActual = null;
+  document.getElementById("id-overlay").classList.remove("off");
+  document.getElementById("cur-user-bar").style.display = "none";
+  document.getElementById("id-sel").value = "";
+  document.getElementById("id-rol-tag").style.display = "none";
+  document.getElementById("id-btn").disabled = true;
+}
+// Aplica la visibilidad de tabs segun el rol: oculta los botones de
+// tab que no le corresponden al usuario identificado, y si el tab
+// activo en ese momento ya no es visible, salta al primero permitido.
+function aplicarFiltroDeRol(u){
+  var permitidos = (TABS_POR_ROL[u.rol] || []).concat(["historial"]);
+  TODOS_LOS_TABS.forEach(function(t){
+    var btn = document.getElementById("tab-"+t);
+    if(!btn) return;
+    if(permitidos.indexOf(t) === -1) btn.classList.add("hidden-rol");
+    else btn.classList.remove("hidden-rol");
+  });
+  var activo = document.querySelector(".nav-tab.active");
+  var activoId = activo ? activo.id.replace("tab-","") : null;
+  if(!activoId || permitidos.indexOf(activoId) === -1){
+    goTab(permitidos[0] || "historial");
+  }
+}
+// Restaurar identidad si ya se identificó antes en esta sesión de
+// navegador (no persiste entre dispositivos ni se comparte).
+(function intentarRestaurarIdentidad(){
+  try{
+    var guardado = sessionStorage.getItem("usuarioActual");
+    if(guardado){
+      var u = JSON.parse(guardado);
+      if(u && u.nombre && u.rol){
+        usuarioActual = u;
+        document.getElementById("id-overlay").classList.add("off");
+        document.getElementById("cur-user-bar").style.display = "flex";
+        document.getElementById("cur-user-txt").textContent = u.nombre + " (" + u.rol + ")";
+      }
+    }
+  }catch(e){}
+})();
+
 // INIT
 document.getElementById("hdr-fecha").textContent = new Date().toLocaleDateString("es-MX",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+poblarSelectIdentidad();
+if(usuarioActual) aplicarFiltroDeRol(usuarioActual);
 
 // Build grupo grid
 var ggEl = document.getElementById("gg");
@@ -735,12 +884,21 @@ function demoHandler(payload){
 
   if(action === "cerrar-dia"){
     var cierres = payload.payload.cierres || [];
-    cierres.forEach(function(c){
-      var r = DEMO_DB.find(function(x){ return x.folio===c.folio; });
+    var porFolioDemo = {};
+    cierres.forEach(function(c){ if(!porFolioDemo[c.folio]) porFolioDemo[c.folio]=[]; porFolioDemo[c.folio].push(c); });
+    Object.keys(porFolioDemo).forEach(function(folio){
+      var r = DEMO_DB.find(function(x){ return x.folio===folio; });
       if(!r) return;
-      r.cierreEstado = c.estado;
-      if(c.estado === "atendida") r.estado = "CERRADO";
-      else if(c.estado === "reprogramar"){ r.estado="APROBADO"; r.proveedor=""; r.estatusOp=""; }
+      if(!Array.isArray(r.fallas)) r.fallas = [{}];
+      porFolioDemo[folio].forEach(function(c){
+        var idx = (typeof c.idx==="number")?c.idx:(parseInt(c.idx)||0);
+        if(!r.fallas[idx]) r.fallas[idx] = {};
+        r.fallas[idx].cierreEstado = c.estado;
+      });
+      var total = r.fallas.length||1;
+      var atendidas = r.fallas.filter(function(f){ return f&&f.cierreEstado==="atendida"; }).length;
+      if(atendidas>=total && total>0){ r.estado="CERRADO"; r.cierreEstado="atendida"; }
+      else { r.estado="ASIGNADO"; r.cierreEstado="parcial"; }
     });
     return {success:true, mensaje:"Demo: cierre registrado"};
   }
@@ -1283,10 +1441,18 @@ function cargarCierre(){
   if(!sup) return;
   apiFetch({action:"obtener", filtros:{estado:"ASIGNADO", supervisor:sup}}, function(res){
     var asig = toArray(res.datos).filter(function(r){ return r.estado==="ASIGNADO"; });
-    document.getElementById("ci-t").textContent = asig.length;
-    document.getElementById("ci-o").textContent = asig.filter(function(r){ return r.cierreEstado==="atendida"; }).length;
-    document.getElementById("ci-p").textContent = asig.filter(function(r){ return r.cierreEstado==="pendiente"; }).length;
-    document.getElementById("ci-r").textContent = asig.filter(function(r){ return r.cierreEstado==="reprogramar"; }).length;
+    // Contar fallas individuales pendientes (no folios) para que el
+    // total refleje la granularidad real de cierre por falla.
+    var totalFallasPend = 0;
+    asig.forEach(function(r){
+      var fl = (Array.isArray(r.fallas) && r.fallas.length) ? r.fallas : [{}];
+      fl.forEach(function(f){ if(!f || f.cierreEstado !== "atendida") totalFallasPend++; });
+    });
+    document.getElementById("ci-t").textContent = totalFallasPend;
+    document.getElementById("ci-o").textContent = 0;
+    document.getElementById("ci-p").textContent = 0;
+    document.getElementById("ci-r").textContent = 0;
+    cierreSel = {};
     renderCierre(asig);
     updateBadges(res.todos||asig);
   });
@@ -1295,11 +1461,30 @@ function renderCierre(data){
   var c = document.getElementById("cierre-cards"); c.innerHTML = "";
   if(!data.length){ c.innerHTML="<div class=\"empty\"><div class=\"empty-i\">Ok<" + "/div><div class=\"empty-m\">No hay fallas asignadas aun<" + "/div><" + "/div>";
     document.getElementById("btn-cierre-enviar").disabled=true; return; }
-  data.forEach(function(r){ c.appendChild(buildCierreCard(r)); });
-  checkCierreBtn(data);
+  var totalFallasPendientes = 0;
+  data.forEach(function(r){
+    var card = buildCierreCard(r);
+    if(card){ c.appendChild(card); totalFallasPendientes += card._numPendientes; }
+  });
+  if(totalFallasPendientes===0){
+    c.innerHTML="<div class=\"empty\"><div class=\"empty-i\">Ok<" + "/div><div class=\"empty-m\">No hay fallas pendientes de cierre<" + "/div><" + "/div>";
+  }
+  checkCierreBtn(totalFallasPendientes);
 }
+// Clave compuesta folio::idx para identificar una falla individual
+// dentro de un folio que puede agrupar varias fallas.
+function cierreKey(folio, idx){ return folio+"::"+idx; }
 function buildCierreCard(r){
   var card = document.createElement("div"); card.className="fc";
+  var fallasList = (Array.isArray(r.fallas) && r.fallas.length) ? r.fallas : [{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
+  // Solo se muestran (y se pueden cerrar) las fallas que NO han sido
+  // ya marcadas "atendida" en una corrida de cierre anterior. Esto
+  // permite que un folio con 3 fallas, donde ya se cerraron 2, solo
+  // muestre la 3ra pendiente la siguiente vez que el supervisor entre.
+  var pendientesIdx = [];
+  fallasList.forEach(function(f, i){ if(!f || f.cierreEstado !== "atendida") pendientesIdx.push(i); });
+  if(!pendientesIdx.length){ card.style.display="none"; card._numPendientes = 0; return card; }
+
   // Header
   var hdr = document.createElement("div"); hdr.className="fc-h";
   hdr.onclick = function(){ bod.classList.toggle("on"); };
@@ -1307,30 +1492,41 @@ function buildCierreCard(r){
   var inf = document.createElement("div"); inf.className="fc-info";
   var tit = document.createElement("div"); tit.className="fc-title"; tit.textContent=r.unidad+" - "+r.terminal;
   var met = document.createElement("div"); met.className="fc-meta";
-  met.textContent=(r.proveedor||"-")+" | "+(r.estatusOp||"-")+(r.ticketSisco?" | Ticket: "+r.ticketSisco:"");
+  var totalEnFolio = fallasList.length;
+  met.textContent=(r.proveedor||"-")+" | "+(r.estatusOp||"-")+(r.ticketSisco?" | Ticket: "+r.ticketSisco:"")+" | "+pendientesIdx.length+" de "+totalEnFolio+" falla(s) pendiente(s)";
   inf.appendChild(tit); inf.appendChild(met);
-  var est = cierreSel[r.folio]||"sin";
-  var sbcls = {sin:"sb-rep",atendida:"sb-apro",pendiente:"sb-asig",reprogramar:"sb-rech"};
-  var sblbl = {sin:"Sin marcar",atendida:"Concluida",pendiente:"Pendiente",reprogramar:"Reprogramar"};
-  var sb = document.createElement("span"); sb.className="sb "+(sbcls[est]); sb.id="ci-tag-"+r.folio; sb.textContent=sblbl[est];
+  var sb = document.createElement("span"); sb.className="sb sb-asig"; sb.textContent=pendientesIdx.length+" pendiente"+(pendientesIdx.length>1?"s":"");
   hdr.appendChild(fol); hdr.appendChild(inf); hdr.appendChild(sb); card.appendChild(hdr);
+
   // Body — open by default
   var bod = document.createElement("div"); bod.className="fc-b on"; bod.id="cifcb-"+r.folio;
-  // Fallas list
-  var fi = document.createElement("div"); fi.className="fi"; fi.style.marginTop="10px";
-  var fallasList = (Array.isArray(r.fallas) && r.fallas.length) ? r.fallas : [{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
-  fallasList.forEach(function(f){
-    var it=document.createElement("div"); it.className="fi-item";
-    var g=document.createElement("div"); g.className="fi-g"; g.textContent=f.grupo+(f.subgrupo?" ▸ "+f.subgrupo:"");
-    var d=document.createElement("div"); d.className="fi-d"; d.textContent=(f.subfallas||[]).join(" / ")+(f.proveedor?" | "+f.proveedor:"");
-    it.appendChild(g); it.appendChild(d); fi.appendChild(it);
+
+  // Una sub-tarjeta de cierre POR CADA FALLA pendiente del folio
+  pendientesIdx.forEach(function(idx){
+    bod.appendChild(buildFallaCierreBlock(r, idx, fallasList[idx]));
   });
-  bod.appendChild(fi);
+
+  card.appendChild(bod);
+  card._numPendientes = pendientesIdx.length;
+  return card;
+}
+function buildFallaCierreBlock(r, idx, f){
+  var key = cierreKey(r.folio, idx);
+  var wrap = document.createElement("div");
+  wrap.style.cssText="border:1px solid #e9ecef;border-radius:6px;padding:12px;margin-bottom:12px;background:#fbfbfd;";
+
+  var fi = document.createElement("div"); fi.className="fi";
+  var it=document.createElement("div"); it.className="fi-item";
+  var g=document.createElement("div"); g.className="fi-g"; g.textContent="Falla "+(idx+1)+" — "+(f.grupo||"")+(f.subgrupo?" ▸ "+f.subgrupo:"");
+  var d=document.createElement("div"); d.className="fi-d"; d.textContent=(f.subfallas||[]).join(" / ")+(f.proveedor?" | "+f.proveedor:"");
+  it.appendChild(g); it.appendChild(d); fi.appendChild(it);
+  wrap.appendChild(fi);
+
   // Accion cierre
-  var acc = document.createElement("div"); acc.className="acc acc-cierre";
-  var at = document.createElement("div"); at.className="acc-title"; at.textContent="Resultado de atencion del turno";
+  var acc = document.createElement("div"); acc.className="acc acc-cierre"; acc.style.marginTop="8px";
+  var at = document.createElement("div"); at.className="acc-title"; at.textContent="Resultado de atencion de esta falla";
   acc.appendChild(at);
-  // 3 opciones
+  var est = cierreSel[key]||"sin";
   var crow = document.createElement("div"); crow.style.cssText="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap;";
   [
     {ico:"&#9989;",lbl:"Concluida",val:"atendida",col:"#155724",bg:"#d4edda",bdr:"#c3e6cb"},
@@ -1342,42 +1538,46 @@ function buildCierreCard(r){
     var ico=document.createElement("div"); ico.innerHTML=opt.ico; ico.style.cssText="font-size:18px;margin-bottom:3px;";
     var lbl=document.createElement("div"); lbl.textContent=opt.lbl; lbl.style.cssText="font-size:11px;font-weight:700;color:"+(est===opt.val?opt.col:"#495057")+";";
     cb.appendChild(ico); cb.appendChild(lbl);
-    cb.onclick=(function(o,btn,lbl_el){return function(){ setCierre(r.folio,o.val,crow,btn,lbl_el,o); };})(opt,cb,lbl);
+    cb.onclick=(function(o,btn,lbl_el){return function(){ setCierre(key,o.val,crow,btn,lbl_el,o); };})(opt,cb,lbl);
     crow.appendChild(cb);
   });
   acc.appendChild(crow);
+
   // Foto obligatoria para concluidas
-  var fotoWrap = document.createElement("div"); fotoWrap.id="foto-wrap-"+r.folio;
+  var fotoWrap = document.createElement("div"); fotoWrap.id="foto-wrap-"+key;
   fotoWrap.style.cssText="display:"+(est==="atendida"?"block":"none")+";margin-bottom:10px;padding:10px;background:#d4edda;border:1px solid #c3e6cb;border-radius:4px;";
   var flbl=document.createElement("div"); flbl.style.cssText="font-size:11px;font-weight:700;color:#155724;margin-bottom:6px;"; flbl.textContent="Evidencia fotografica obligatoria:";
-  var finp=document.createElement("input"); finp.type="file"; finp.accept="image/*"; finp.id="foto-"+r.folio;
+  var finp=document.createElement("input"); finp.type="file"; finp.accept="image/*"; finp.id="foto-"+key;
   finp.style.cssText="width:100%;font-size:12px;";
-  finp.onchange=function(){ chkFoto(r.folio); };
-  var ferr=document.createElement("div"); ferr.id="foto-err-"+r.folio;
+  finp.onchange=function(){ chkFoto(key); };
+  var ferr=document.createElement("div"); ferr.id="foto-err-"+key;
   ferr.style.cssText="font-size:10px;color:#dc3545;margin-top:4px;display:none;"; ferr.textContent="La foto es obligatoria para marcar como Concluida";
   fotoWrap.appendChild(flbl); fotoWrap.appendChild(finp); fotoWrap.appendChild(ferr);
   acc.appendChild(fotoWrap);
+
   // Motivo para pendiente/reprogramar
-  var xf = document.createElement("div"); xf.id="xf-"+r.folio;
+  var xf = document.createElement("div"); xf.id="xf-"+key;
   xf.style.cssText="display:"+(est!=="atendida"&&est!=="sin"?"block":"none")+";margin-bottom:10px;";
   var xmlbl=document.createElement("div"); xmlbl.style.cssText="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;margin-bottom:4px;"; xmlbl.textContent="Motivo:";
-  var ms = document.createElement("select"); ms.className="mini-sel"; ms.id="ci-mot-"+r.folio;
+  var ms = document.createElement("select"); ms.className="mini-sel"; ms.id="ci-mot-"+key;
   ["-- Seleccionar motivo --","En espera de refaccion","Proveedor no se presento","Unidad requerida en operacion urgente","Taller sin disponibilidad","Pendiente diagnostico","Cambio de proveedor necesario","Otro"].forEach(function(op){ var o=document.createElement("option");o.textContent=op;ms.appendChild(o); });
   xf.appendChild(xmlbl); xf.appendChild(ms); acc.appendChild(xf);
+
   // Observaciones libres
   var oblbl=document.createElement("div"); oblbl.style.cssText="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;margin:8px 0 4px;"; oblbl.textContent="Observaciones del supervisor:";
-  var obinp=document.createElement("input"); obinp.type="text"; obinp.className="mini-in"; obinp.id="ci-obs-"+r.folio; obinp.placeholder="Detalles adicionales del cierre...";
+  var obinp=document.createElement("input"); obinp.type="text"; obinp.className="mini-in"; obinp.id="ci-obs-"+key; obinp.placeholder="Detalles adicionales del cierre...";
   acc.appendChild(oblbl); acc.appendChild(obinp);
-  bod.appendChild(acc); card.appendChild(bod);
-  return card;
+
+  wrap.appendChild(acc);
+  return wrap;
 }
-function chkFoto(folio){
-  var finp = document.getElementById("foto-"+folio);
-  var ferr = document.getElementById("foto-err-"+folio);
+function chkFoto(key){
+  var finp = document.getElementById("foto-"+key);
+  var ferr = document.getElementById("foto-err-"+key);
   if(finp && finp.files.length>0 && ferr) ferr.style.display="none";
 }
-function setCierre(folio, estado, crow, btn, lbl_el, opt){
-  cierreSel[folio] = estado;
+function setCierre(key, estado, crow, btn, lbl_el, opt){
+  cierreSel[key] = estado;
   // Reset all buttons visually
   crow.querySelectorAll("button").forEach(function(b){
     b.style.background="white";
@@ -1388,15 +1588,10 @@ function setCierre(folio, estado, crow, btn, lbl_el, opt){
   btn.style.background = opt.bg;
   btn.style.borderColor = opt.bdr;
   if(lbl_el) lbl_el.style.color = opt.col;
-  // Update tag
-  var tag = document.getElementById("ci-tag-"+folio);
-  var sbcls = {atendida:"sb sb-apro",pendiente:"sb sb-asig",reprogramar:"sb sb-rech"};
-  var sblbl = {atendida:"Concluida",pendiente:"Pendiente",reprogramar:"Reprogramar"};
-  if(tag){ tag.className=sbcls[estado]; tag.textContent=sblbl[estado]; }
   // Show/hide foto and motivo
-  var fw = document.getElementById("foto-wrap-"+folio);
+  var fw = document.getElementById("foto-wrap-"+key);
   if(fw) fw.style.display = (estado==="atendida") ? "block" : "none";
-  var xf = document.getElementById("xf-"+folio);
+  var xf = document.getElementById("xf-"+key);
   if(xf) xf.style.display = (estado!=="atendida"&&estado!=="sin") ? "block" : "none";
   // Update stats
   document.getElementById("ci-o").textContent = Object.values(cierreSel).filter(function(e){ return e==="atendida"; }).length;
@@ -1404,8 +1599,8 @@ function setCierre(folio, estado, crow, btn, lbl_el, opt){
   document.getElementById("ci-r").textContent = Object.values(cierreSel).filter(function(e){ return e==="reprogramar"; }).length;
   checkCierreBtn(null);
 }
-function checkCierreBtn(data){
-  var total = data ? data.length : parseInt(document.getElementById("ci-t").textContent)||0;
+function checkCierreBtn(totalPendientes){
+  var total = (totalPendientes!==null && totalPendientes!==undefined) ? totalPendientes : parseInt(document.getElementById("ci-t").textContent)||0;
   var marcadas = Object.keys(cierreSel).length;
   document.getElementById("btn-cierre-enviar").disabled = total===0||marcadas<total;
 }
@@ -1423,12 +1618,12 @@ function enviarCierre(){
   if(!sup){ alerta("Selecciona tu nombre","danger"); return; }
   // Validar fotos obligatorias para concluidas
   var sinFoto = [];
-  Object.keys(cierreSel).forEach(function(f){
-    if(cierreSel[f]==="atendida"){
-      var finp = document.getElementById("foto-"+f);
+  Object.keys(cierreSel).forEach(function(key){
+    if(cierreSel[key]==="atendida"){
+      var finp = document.getElementById("foto-"+key);
       if(!finp||!finp.files||!finp.files.length){
-        sinFoto.push(f);
-        var ferr = document.getElementById("foto-err-"+f);
+        sinFoto.push(key);
+        var ferr = document.getElementById("foto-err-"+key);
         if(ferr) ferr.style.display="block";
       }
     }
@@ -1440,30 +1635,33 @@ function enviarCierre(){
   var textoOriginal = btnEnviar.textContent;
   btnEnviar.textContent = "Subiendo evidencia...";
 
-  var folios = Object.keys(cierreSel);
-  Promise.all(folios.map(function(f){
-    if(cierreSel[f]!=="atendida") return Promise.resolve(null);
-    var finp = document.getElementById("foto-"+f);
+  var keys = Object.keys(cierreSel);
+  Promise.all(keys.map(function(key){
+    if(cierreSel[key]!=="atendida") return Promise.resolve(null);
+    var finp = document.getElementById("foto-"+key);
     var file = finp.files[0];
     return fileToBase64(file).then(function(dataUrl){
-      return { folio:f, dataUrl:dataUrl, nombreArchivo:file.name };
+      return { key:key, dataUrl:dataUrl, nombreArchivo:file.name };
     });
   })).then(function(fotosResueltas){
-    var fotosPorFolio = {};
-    fotosResueltas.forEach(function(r){ if(r) fotosPorFolio[r.folio] = r; });
+    var fotosPorKey = {};
+    fotosResueltas.forEach(function(r){ if(r) fotosPorKey[r.key] = r; });
 
-    var cierreData = folios.map(function(f){
-      var mot = document.getElementById("ci-mot-"+f);
-      var obs = document.getElementById("ci-obs-"+f);
+    var cierreData = keys.map(function(key){
+      var partes = key.split("::");
+      var folio = partes[0], idx = parseInt(partes[1])||0;
+      var mot = document.getElementById("ci-mot-"+key);
+      var obs = document.getElementById("ci-obs-"+key);
       var item = {
-        folio: f,
-        estado: cierreSel[f],
+        folio: folio,
+        idx: idx,
+        estado: cierreSel[key],
         motivo: mot&&mot.value!=="-- Seleccionar motivo --"?mot.value:"",
         observaciones: obs?obs.value.trim():""
       };
-      if(fotosPorFolio[f]){
-        item.fotoBase64 = fotosPorFolio[f].dataUrl;
-        item.fotoNombre = fotosPorFolio[f].nombreArchivo;
+      if(fotosPorKey[key]){
+        item.fotoBase64 = fotosPorKey[key].dataUrl;
+        item.fotoNombre = fotosPorKey[key].nombreArchivo;
       }
       return item;
     });
