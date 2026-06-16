@@ -1409,6 +1409,14 @@ function checkCierreBtn(data){
   var marcadas = Object.keys(cierreSel).length;
   document.getElementById("btn-cierre-enviar").disabled = total===0||marcadas<total;
 }
+function fileToBase64(file){
+  return new Promise(function(resolve, reject){
+    var reader = new FileReader();
+    reader.onload = function(){ resolve(reader.result); }; // incluye "data:image/...;base64,...."
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 function enviarCierre(){
   var sup = document.getElementById("cierre-sup-sel").value;
   var turno = document.getElementById("cierre-turno").value;
@@ -1426,26 +1434,58 @@ function enviarCierre(){
     }
   });
   if(sinFoto.length){ alerta("Agrega foto de evidencia a: "+sinFoto.join(", "),"danger"); return; }
-  var cierreData = Object.keys(cierreSel).map(function(f){
-    var mot = document.getElementById("ci-mot-"+f);
-    var obs = document.getElementById("ci-obs-"+f);
-    return {
-      folio: f,
-      estado: cierreSel[f],
-      motivo: mot&&mot.value!=="-- Seleccionar motivo --"?mot.value:"",
-      observaciones: obs?obs.value.trim():""
-    };
-  });
-  var concluidas = cierreData.filter(function(c){ return c.estado==="atendida"; }).length;
-  var pendientes = cierreData.filter(function(c){ return c.estado==="pendiente"; }).length;
-  var reprogramar = cierreData.filter(function(c){ return c.estado==="reprogramar"; }).length;
-  apiFetch({action:"cerrar-dia", payload:{supervisor:sup, turno:turno, cierres:cierreData, resumen:{concluidas:concluidas,pendientes:pendientes,reprogramar:reprogramar}}},
-    function(res){
-      alerta("Cierre enviado - "+concluidas+" concluidas, "+pendientes+" pendientes, "+reprogramar+" a reprogramar","success");
-      cierreSel={};
-      cargarCierre();
-      setTimeout(function(){ goTab("coord"); },1200);
+
+  var btnEnviar = document.getElementById("btn-cierre-enviar");
+  btnEnviar.disabled = true;
+  var textoOriginal = btnEnviar.textContent;
+  btnEnviar.textContent = "Subiendo evidencia...";
+
+  var folios = Object.keys(cierreSel);
+  Promise.all(folios.map(function(f){
+    if(cierreSel[f]!=="atendida") return Promise.resolve(null);
+    var finp = document.getElementById("foto-"+f);
+    var file = finp.files[0];
+    return fileToBase64(file).then(function(dataUrl){
+      return { folio:f, dataUrl:dataUrl, nombreArchivo:file.name };
     });
+  })).then(function(fotosResueltas){
+    var fotosPorFolio = {};
+    fotosResueltas.forEach(function(r){ if(r) fotosPorFolio[r.folio] = r; });
+
+    var cierreData = folios.map(function(f){
+      var mot = document.getElementById("ci-mot-"+f);
+      var obs = document.getElementById("ci-obs-"+f);
+      var item = {
+        folio: f,
+        estado: cierreSel[f],
+        motivo: mot&&mot.value!=="-- Seleccionar motivo --"?mot.value:"",
+        observaciones: obs?obs.value.trim():""
+      };
+      if(fotosPorFolio[f]){
+        item.fotoBase64 = fotosPorFolio[f].dataUrl;
+        item.fotoNombre = fotosPorFolio[f].nombreArchivo;
+      }
+      return item;
+    });
+    var concluidas = cierreData.filter(function(c){ return c.estado==="atendida"; }).length;
+    var pendientes = cierreData.filter(function(c){ return c.estado==="pendiente"; }).length;
+    var reprogramar = cierreData.filter(function(c){ return c.estado==="reprogramar"; }).length;
+    apiFetch({action:"cerrar-dia", payload:{supervisor:sup, turno:turno, cierres:cierreData, resumen:{concluidas:concluidas,pendientes:pendientes,reprogramar:reprogramar}}},
+      function(res){
+        alerta("Cierre enviado - "+concluidas+" concluidas, "+pendientes+" pendientes, "+reprogramar+" a reprogramar","success");
+        cierreSel={};
+        cargarCierre();
+        setTimeout(function(){ goTab("coord"); },1200);
+      },
+      function(){
+        btnEnviar.disabled = false;
+        btnEnviar.textContent = textoOriginal;
+      });
+  }).catch(function(err){
+    alerta("Error al procesar la(s) foto(s): "+err.message,"danger");
+    btnEnviar.disabled = false;
+    btnEnviar.textContent = textoOriginal;
+  });
 }
 
 // --- HISTORIAL ---
