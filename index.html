@@ -664,6 +664,13 @@ function apiFetch(payload, onOk, onErr){
       if(res.todos && !Array.isArray(res.todos)) res.todos = toArray(res.todos);
       if(!res.datos) res.datos = [];
       if(!res.todos) res.todos = res.datos;
+      // Normalizar r.fallas dentro de cada fila (Apps Script puede serializar
+      // un array vacío como objeto {} en vez de [], lo que rompe .forEach)
+      [res.datos, res.todos].forEach(function(arr){
+        arr.forEach(function(r){
+          if(r && r.fallas && !Array.isArray(r.fallas)) r.fallas = toArray(r.fallas);
+        });
+      });
       if(res.success) onOk(res);
       else { alerta("Error: " + (res.mensaje||"desconocido"), "danger"); if(onErr) onErr(res); }
     })
@@ -915,7 +922,7 @@ function buildSubCard(r){
 
   // Fallas list
   var fi = document.createElement("div"); fi.className = "fi"; fi.style.marginTop = "10px";
-  var fallasList = r.fallas || [{grupo:r.tipoFalla||"Falla",subfallas:[r.notas||""],obs:""}];
+  var fallasList = (Array.isArray(r.fallas) && r.fallas.length) ? r.fallas : [{grupo:r.tipoFalla||"Falla",subfallas:[r.notas||""],obs:""}];
   fallasList.forEach(function(f){
     var it = document.createElement("div"); it.className = "fi-item";
     var g = document.createElement("div"); g.className = "fi-g"; g.textContent = f.grupo + (f.subgrupo ? " \u25b8 " + f.subgrupo : "");
@@ -1089,7 +1096,7 @@ function buildCoordCard(r){
   tkwrap.appendChild(tkpfx); tkwrap.appendChild(tkin);
   acc.appendChild(tkwrap); acc.appendChild(tkerr);
   if(!estSel[r.folio]) estSel[r.folio] = {};
-  var fallasList = r.fallas || [{grupo:r.tipoFalla||"Falla",subfallas:[r.notas||""],obs:""}];
+  var fallasList = (Array.isArray(r.fallas) && r.fallas.length) ? r.fallas : [{grupo:r.tipoFalla||"Falla",subfallas:[r.notas||""],obs:""}];
   fallasList.forEach(function(f, i){
     var fb = document.createElement("div"); fb.className = "falla-box";
     var fh = document.createElement("div"); fh.className = "falla-box-hdr";
@@ -1243,7 +1250,7 @@ function filtrar(){
   var tbody = document.getElementById("ger-tbody"); tbody.innerHTML = "";
   res.forEach(function(r){
     var tr = document.createElement("tr");
-    var fallasList = r.fallas||[{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
+    var fallasList = (Array.isArray(r.fallas) && r.fallas.length) ? r.fallas : [{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
     var fallasStr = fallasList.map(function(f){ return f.grupo+(f.proveedor?" -> "+f.proveedor:""); }).join(" | ");
     var provStr = fallasList.filter(function(f){ return f.proveedor; }).map(function(f){ return f.proveedor; }).join(" / ")||r.proveedor||"-";
     var estStr = fallasList.filter(function(f){ return f.estatusOp; }).map(function(f){ return f.estatusOp; }).join(" / ")||r.estatusOp||"-";
@@ -1311,7 +1318,7 @@ function buildCierreCard(r){
   var bod = document.createElement("div"); bod.className="fc-b on"; bod.id="cifcb-"+r.folio;
   // Fallas list
   var fi = document.createElement("div"); fi.className="fi"; fi.style.marginTop="10px";
-  var fallasList = r.fallas||[{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
+  var fallasList = (Array.isArray(r.fallas) && r.fallas.length) ? r.fallas : [{grupo:r.tipoFalla||"",subfallas:[r.notas||""]}];
   fallasList.forEach(function(f){
     var it=document.createElement("div"); it.className="fi-item";
     var g=document.createElement("div"); g.className="fi-g"; g.textContent=f.grupo+(f.subgrupo?" ▸ "+f.subgrupo:"");
@@ -1449,7 +1456,7 @@ function cargarHistorial(){
     var sb = {"REPORTADO":"sb-rep","APROBADO":"sb-apro","ASIGNADO":"sb-asig","CERRADO":"sb-cerr","RECHAZADO":"sb-rech"};
     todos.forEach(function(r){
       var tr = document.createElement("tr");
-      var fl = r.fallas||[{grupo:r.tipoFalla||""}];
+      var fl = (Array.isArray(r.fallas) && r.fallas.length) ? r.fallas : [{grupo:r.tipoFalla||""}];
       [r.folio,r.fecha,r.unidad,r.terminal,r.supervisor,r.mtto||"-",fl.map(function(f){return f.grupo;}).join(" / "),r.aprobadoPor||"-",r.proveedor||"-",r.estatusOp||"-"].forEach(function(val){
         var td=document.createElement("td");td.textContent=val;tr.appendChild(td);
       });
