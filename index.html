@@ -362,13 +362,13 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
             <label style="font-size:11px;font-weight:700;color:#495057;text-transform:uppercase;display:block;margin-bottom:5px;">Terminal</label>
             <select class="fld-sel" id="sup-term">
               <option value="">-- Seleccionar --</option>
-              <option>Anil</option>
-              <option>Barranca del Muerto</option>
-              <option>San Juan Ixhuatepec</option>
-              <option>18 de Marzo</option>
-              <option>Toluca</option>
-              <option>Puebla</option>
-              <option>Tula</option>
+              <option value="Anil">Anil</option>
+              <option value="Barranca del Muerto">Barranca del Muerto</option>
+              <option value="San Juan Ixhuatepec">San Juan Ixhuatepec</option>
+              <option value="TAD-18 de Marzo">18 de Marzo</option>
+              <option value="Toluca">Toluca</option>
+              <option value="Puebla">Puebla</option>
+              <option value="Tula">Tula</option>
             </select>
           </div>
 
@@ -1568,6 +1568,16 @@ function buildFallaCierreBlock(r, idx, f){
   var obinp=document.createElement("input"); obinp.type="text"; obinp.className="mini-in"; obinp.id="ci-obs-"+key; obinp.placeholder="Detalles adicionales del cierre...";
   acc.appendChild(oblbl); acc.appendChild(obinp);
 
+  // Boton de envío individual para esta falla específica.
+  // Permite cerrar falla por falla sin necesidad de marcar todas
+  // las fallas del folio antes de poder enviar.
+  var btnFalla = document.createElement("button");
+  btnFalla.id = "btn-falla-"+key;
+  btnFalla.style.cssText = "width:100%;margin-top:10px;padding:11px;background:linear-gradient(135deg,#27ae60,#2ecc71);color:white;border:none;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;letter-spacing:.5px;";
+  btnFalla.textContent = "Enviar cierre de esta falla";
+  btnFalla.onclick = (function(k){ return function(){ enviarFallaIndividual(k); }; })(key);
+  acc.appendChild(btnFalla);
+
   wrap.appendChild(acc);
   return wrap;
 }
@@ -1575,6 +1585,51 @@ function chkFoto(key){
   var finp = document.getElementById("foto-"+key);
   var ferr = document.getElementById("foto-err-"+key);
   if(finp && finp.files.length>0 && ferr) ferr.style.display="none";
+}
+// Envía el cierre de UNA sola falla sin requerir que las demás
+// estén marcadas. Reutiliza la misma lógica de compresión y
+// payload que enviarCierre(), pero para una sola clave folio::idx.
+function enviarFallaIndividual(key){
+  var est = cierreSel[key];
+  if(!est || est==="sin"){
+    alerta("Marca primero el resultado de esta falla (Concluida / Pendiente / Reprogramar)","danger"); return;
+  }
+  if(est==="atendida"){
+    var finp = document.getElementById("foto-"+key);
+    if(!finp||!finp.files||!finp.files.length){
+      var ferr = document.getElementById("foto-err-"+key);
+      if(ferr) ferr.style.display="block";
+      alerta("Agrega foto de evidencia antes de enviar","danger"); return;
+    }
+  }
+  var sup = document.getElementById("cierre-sup-sel").value;
+  var turno = document.getElementById("cierre-turno").value;
+  if(!sup){ alerta("Selecciona tu nombre de supervisor","danger"); return; }
+  var btn = document.getElementById("btn-falla-"+key);
+  if(btn){ btn.disabled=true; btn.textContent="Enviando..."; }
+  var partes = key.split("::");
+  var folio = partes[0], idx = parseInt(partes[1])||0;
+  var mot = document.getElementById("ci-mot-"+key);
+  var obs = document.getElementById("ci-obs-"+key);
+  var item = { folio:folio, idx:idx, estado:est, motivo:mot&&mot.value!=="-- Seleccionar motivo --"?mot.value:"", observaciones:obs?obs.value.trim():"" };
+  var fotoPromise = (est==="atendida") ? (function(){
+    var f = document.getElementById("foto-"+key).files[0];
+    return fileToBase64(f).then(function(dataUrl){ item.fotoBase64=dataUrl; item.fotoNombre=f.name; });
+  })() : Promise.resolve();
+  fotoPromise.then(function(){
+    apiFetch({action:"cerrar-dia", payload:{supervisor:sup, turno:turno, cierres:[item], resumen:{concluidas:est==="atendida"?1:0,pendientes:est==="pendiente"?1:0,reprogramar:est==="reprogramar"?1:0}}},
+      function(res){
+        alerta("Falla "+(idx+1)+" del folio "+folio+" registrada como "+est,"success");
+        delete cierreSel[key];
+        cargarCierre();
+      },
+      function(){
+        if(btn){ btn.disabled=false; btn.textContent="Enviar cierre de esta falla"; }
+      });
+  }).catch(function(err){
+    alerta("Error al procesar foto: "+err.message,"danger");
+    if(btn){ btn.disabled=false; btn.textContent="Enviar cierre de esta falla"; }
+  });
 }
 function setCierre(key, estado, crow, btn, lbl_el, opt){
   cierreSel[key] = estado;
