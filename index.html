@@ -336,7 +336,6 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
           <select class="user-sel" id="sup-sel" onchange="onSupSel()">
             <option value="">-- Selecciona tu nombre --</option>
             <option>Ivan Fernando Reyes González</option>
-            <option>Julio Ricardo Castillo Luna</option>
             <option>Carlos Salvador Baez Díaz</option>
             <option>Gabriel Alvarez Sánchez</option>
             <option>Alejo Carmona Barradas</option>
@@ -568,7 +567,6 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
         <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Supervisor</label>
         <select class="user-sel" id="cierre-sup-sel" style="width:auto;" onchange="cargarCierre()">
           <option value="">-- Selecciona tu nombre --</option>
-          <option>Ivan Fernando Reyes González</option><option>Julio Ricardo Castillo Luna</option><option>Carlos Salvador Baez Díaz</option>
           <option>Gabriel Alvarez Sánchez</option><option>Alejo Carmona Barradas</option><option>Andres Ignacio Reyes Silva</option><option>Jesus Salvador de la Cruz Hernández</option><option>Ricardo Arturo Neri Trejo</option>
         </select>
         <span style="font-size:11px;color:#6c757d;">|</span>
@@ -639,9 +637,9 @@ var USUARIOS_SISTEMA = [
   {nombre:"Ing. Eder Emanuel Valdez", rol:"COORDINADOR"},
   {nombre:"Ing. Alberto Amador", rol:"SUBGERENTE MANTENIMIENTO"},
   {nombre:"Ing. Javier Zarate", rol:"GERENTE MANTENIMIENTO"},
-  {nombre:"Sergio A. Garcia", rol:"COORDINADOR"},
+  {nombre:"Sergio A. Garcia", rol:"SUBJEFE DE UNIDAD"},
   {nombre:"Ivan Fernando Reyes González", rol:"SUPERVISOR"},
-  {nombre:"Julio Ricardo Castillo Luna", rol:"SUPERVISOR"},
+  
   {nombre:"Carlos Salvador Baez Díaz", rol:"SUPERVISOR"},
   {nombre:"Gabriel Alvarez Sánchez", rol:"SUPERVISOR"},
   {nombre:"Alejo Carmona Barradas", rol:"SUPERVISOR"},
@@ -657,6 +655,7 @@ var TABS_POR_ROL = {
   "SUBGERENTE": ["sub"],
   "SUBGERENTE MANTENIMIENTO": ["sub"],
   "COORDINADOR": ["coord"],
+  "SUBJEFE DE UNIDAD": ["coord"],
   "GERENTE": ["ger"],
   "GERENTE MANTENIMIENTO": ["ger"]
 };
@@ -739,9 +738,12 @@ function aplicarFiltroDeRol(u){
 })();
 
 // INIT
+var _paginaCargando = true; // evita llamadas al backend durante la carga inicial
 document.getElementById("hdr-fecha").textContent = new Date().toLocaleDateString("es-MX",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
 poblarSelectIdentidad();
 if(usuarioActual) aplicarFiltroDeRol(usuarioActual);
+// A partir de aquí la página ya cargó: las llamadas al backend en goTab están permitidas.
+_paginaCargando = false;
 
 // Build grupo grid
 var ggEl = document.getElementById("gg");
@@ -766,6 +768,9 @@ function goTab(t){
   document.querySelectorAll(".nav-tab").forEach(function(v){ v.classList.remove("active"); });
   document.getElementById("view-"+t).classList.add("active");
   document.getElementById("tab-"+t).classList.add("active");
+  // No disparar llamadas al backend durante la carga inicial de la página.
+  // El usuario verá los datos cuando haga clic en un tab o use el botón Actualizar.
+  if(_paginaCargando) return;
   if(t==="sub") cargarSub();
   if(t==="coord") cargarCoord();
   if(t==="ger") cargarGer();
