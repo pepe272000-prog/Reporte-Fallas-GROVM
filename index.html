@@ -809,7 +809,15 @@ function apiFetch(payload, onOk, onErr){
     return;
   }
   loader(true);
-  fetch(WEBHOOK, {method:"POST", body:new URLSearchParams(flattenPayload(payload))})
+  // Se convierte a string ANTES de pasarlo a fetch: si se pasa el objeto
+  // URLSearchParams directo, algunas extensiones de Chrome que inspeccionan
+  // peticiones de red (antivirus, gestores de contraseñas, bloqueadores de
+  // anuncios) intentan reenviarlo vía postMessage, lo cual falla porque
+  // URLSearchParams no es clonable por el algoritmo estándar del navegador
+  // ("Failed to execute 'postMessage' on 'Window': URLSearchParams object
+  // could not be cloned"). Mandar un string plano evita exponer ese objeto.
+  var bodyStr = new URLSearchParams(flattenPayload(payload)).toString();
+  fetch(WEBHOOK, {method:"POST", body:bodyStr, headers:{"Content-Type":"application/x-www-form-urlencoded"}})
     .then(function(r){ return r.json(); })
     .then(function(res){
       loader(false);
