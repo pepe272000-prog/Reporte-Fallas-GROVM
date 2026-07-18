@@ -22,6 +22,10 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;b
 .badge{background:#dc3545;color:white;border-radius:10px;padding:1px 6px;font-size:10px;margin-left:5px;}
 .badge.green{background:#27ae60;}
 .badge.blue{background:#2980b9;}
+.semaforo-dot{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:6px;vertical-align:middle;}
+.semaforo-dot.verde{background:#27ae60;}
+.semaforo-dot.amarillo{background:#ffc107;}
+.semaforo-dot.rojo{background:#dc3545;}
 
 /* IDENTIFICACION DE USUARIO (filtro de seguridad por rol) */
 .id-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);display:flex;align-items:center;justify-content:center;z-index:10000;padding:20px;}
@@ -301,6 +305,18 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
   </div>
 </div>
 
+<!-- PENDIENTES AL ENTRAR (v9) — no bloqueante: muestra los sub-folios
+     abiertos del usuario antes de dejarlo pasar al resto del sistema,
+     pero tiene un botón "Continuar" para avanzar de todas formas. -->
+<div class="id-overlay" id="pend-overlay" style="display:none;">
+  <div class="id-box" style="max-width:560px;">
+    <h2 id="pend-titulo">Tus pendientes</h2>
+    <p id="pend-sub">Estos son tus sub-folios abiertos. Puedes continuar al sistema cuando quieras.</p>
+    <div id="pend-lista" style="max-height:320px;overflow-y:auto;margin-bottom:16px;"></div>
+    <button class="id-btn" onclick="cerrarPantallaPendientes()">Continuar al sistema</button>
+  </div>
+</div>
+
 <div class="container">
   <div class="header">
     <div>
@@ -323,6 +339,7 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
     <button class="nav-tab" id="tab-coord" onclick="goTab('coord')">Coordinador <span class="badge blue" id="b-coord">0</span></button>
     <button class="nav-tab" id="tab-ger" onclick="goTab('ger')">Gerencias <span class="badge" style="background:#6c757d" id="b-ger">0</span></button>
     <button class="nav-tab" id="tab-cierre" onclick="goTab('cierre')">Cierre dia <span class="badge blue" id="b-cierre">0</span></button>
+    <button class="nav-tab" id="tab-alertas" onclick="goTab('alertas')">Alertas <span class="badge" style="background:#dc3545" id="b-alertas">0</span></button>
     <button class="nav-tab" id="tab-historial" onclick="goTab('historial')">Historial</button>
   </div>
 
@@ -353,8 +370,9 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
             <div class="pfx-wrap">
               <button class="pfx-btn pmx" id="pfx-pmx" onclick="setPfx('PMX')">PMX</button>
               <button class="pfx-btn" id="pfx-tis" onclick="setPfx('TIS')">TIS</button>
-              <input type="text" class="fld-in pfx-num" id="unit-num" placeholder="20001" maxlength="5">
+              <input type="text" class="fld-in pfx-num" id="unit-num" placeholder="20001" maxlength="5" onblur="chequearDuplicidad()">
             </div>
+            <div id="dup-warning" style="display:none;margin-top:8px;background:#fff3cd;border:1px solid #ffe69c;border-radius:5px;padding:10px 12px;font-size:11px;color:#856404;"></div>
           </div>
 
           <div style="margin-bottom:12px;">
@@ -567,7 +585,7 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
         <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Supervisor</label>
         <select class="user-sel" id="cierre-sup-sel" style="width:auto;" onchange="cargarCierre()">
           <option value="">-- Selecciona tu nombre --</option>
-          <option>Gabriel Alvarez Sánchez</option><option>Alejo Carmona Barradas</option><option>Andres Ignacio Reyes Silva</option><option>Jesus Salvador de la Cruz Hernández</option><option>Ricardo Arturo Neri Trejo</option>
+          <option>Ivan Fernando Reyes González</option><option>Carlos Salvador Baez Díaz</option><option>Gabriel Alvarez Sánchez</option><option>Alejo Carmona Barradas</option><option>Andres Ignacio Reyes Silva</option><option>Jesus Salvador de la Cruz Hernández</option><option>Ricardo Arturo Neri Trejo</option>
         </select>
         <span style="font-size:11px;color:#6c757d;">|</span>
         <label style="font-size:11px;font-weight:700;color:#6c757d;text-transform:uppercase;">Turno</label>
@@ -595,6 +613,25 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
     </button>
   </div>
 
+  <!-- ALERTAS — semáforo de antigüedad por sub-folio (v9) -->
+  <div class="view" id="view-alertas">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+      <div style="font-size:13px;color:#6c757d;">Sub-folios asignados sin cerrar, ordenados por antigüedad</div>
+      <button class="btn btn-sec btn-sm" onclick="cargarAlertas()">Actualizar</button>
+    </div>
+    <div class="stats" style="grid-template-columns:repeat(3,1fr);">
+      <div class="stat" style="border-color:#c3e6cb;"><div class="stat-n" style="color:#155724;" id="al-verde">0</div><div class="stat-l">Verde (0-1 día)</div></div>
+      <div class="stat" style="border-color:#ffe69c;"><div class="stat-n" style="color:#856404;" id="al-amarillo">0</div><div class="stat-l">Amarillo (2-3 días)</div></div>
+      <div class="stat" style="border-color:#f5c6cb;"><div class="stat-n" style="color:#721c24;" id="al-rojo">0</div><div class="stat-l">Rojo (4+ días)</div></div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="tbl" id="alertas-tbl">
+        <thead><tr><th>Semáforo</th><th>Sub-folio</th><th>Unidad</th><th>Terminal</th><th>Supervisor</th><th>Falla</th><th>Días</th></tr></thead>
+        <tbody id="alertas-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
   <!-- HISTORIAL -->
   <div class="view" id="view-historial">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
@@ -611,7 +648,7 @@ select.user-sel:focus,select.fld-sel:focus,input.fld-in:focus,textarea.fld-ta:fo
 </div>
 
 <script>
-var WEBHOOK = "https://script.google.com/macros/s/AKfycbxcAA0OCPKUhXL1RJBLot7OR8cpSfbNSewxZby8utOzAhviI-uXGCXsdDrPGVKxH1GcdQ/exec";
+var WEBHOOK = "https://script.google.com/macros/s/AKfycbzynO62Z2iB2UYsPVytRhTcyAIBJKzOkcv0HRiK5sR6Dc9LrYpZPAO1XQlylOEOy7As3g/exec";
 
 var CAT = {"Aire Acondicionado": ["No enfría / No funciona", "Compresor A/C", "Polea magnética", "Manguera / Fuga de refrigerante", "Módulo de control", "Otro - Aire Acondicionado"], "Cabina": ["Asiento del operador", "Botonera / Controles eléctricos", "Espejos laterales / Retrovisor", "Visera / Toldo / Cofre", "Parabrisas / Plumillas", "Iluminación interior", "Cámara de reversa / Pantalla", "TCS3000 / Electronivel", "Otro - Cabina"], "Carrocería": ["Defensa delantera / Trasera", "Escalera / Estribo / Perchero", "Rombos / Porta rombos", "Canastilla / Domo", "Tonel - Poro / Soldadura", "Tonel - Oxidación / Pintura", "Rines / Birlos", "Tapón de combustible / Autoconsumo", "Manguera de vapores", "Banderines / Señalización", "Siniestro / Golpe / Daño operativo", "Otro - Carrocería"], "Dirección": ["Dirección dura / Desviación", "Fuga de aceite hidráulico", "Pernos / Bujes / Brazo viajero", "Otro - Dirección"], "Eje y Tren de Rodaje": ["Maza / Retén / Aceite de maza", "Cruceta / Yugo / Flecha cardan", "Birlos / Tornillería de eje", "Diferencial - Fuga / Ruido", "Quinta rueda - Juego / Engrase", "Otro - Eje y Tren de Rodaje"], "Embrague": ["Pedal duro / No regresa", "Disco / Plato - Se patina", "Ruido al accionar embrague", "Otro - Embrague"], "Escape": ["Matachispas / Colilla", "Tolva deflectora / Cubre escape", "Soporte / Abrazadera de escape", "Tubo flexible / Manguera", "Fuga de gases a cabina", "Otro - Escape"], "Frenos": ["Balatas - Desgaste / Cambio", "Matracas / Ajustadores", "ABS - Sensor / Código activo", "Freno de motor / Retarder", "Sistema neumático de frenos", "Otro - Frenos"], "Llantas": ["Ponchadura / Desponche", "Desgaste / Bajo milimetraje", "Reemplazo programado", "Otro - Llantas"], "Motor": ["Fuga de aceite", "Refrigeración / Anticongelante", "Combustible / Bomba / Inyector", "Turbo / Admisión", "Pérdida de potencia / Códigos activos", "No enciende / No arranca", "Mantenimiento preventivo", "Sistema de Postratamiento / UREA / SCR / DPF", "Sistema de Enfriamiento", "Otro - Motor"], "Sistema de Aire": ["Fuga de aire general", "Compresor neumático", "Secador de aire", "Manguera espiral", "Freno de estacionamiento", "Otro - Sistema de Aire"], "Sistema de Llenado por el Fondo": ["Sello electrónico / Tapín", "Válvula Betts / API descarga", "Válvula 3 vías / Interlock / Pulsador", "Caja de válvulas / Platina", "Manómetros / Mirillas", "Manguera de vapores", "Canastilla", "Filtro regulador / FESTO", "Fuga de producto", "Fuga de aire en sistema", "Válvula de emergencia / Oblea", "Sensor de sobrellenado", "Calibración volumétrica", "Otro - Sistema de Llenado"], "Sistema Cuenta Litros": ["Pantalla TCS3000", "Válvula Betts - Falla electrónica", "Sonda Madison", "Sello electrónico / Tapín sin imán", "Medidor directo T1 / T2", "Polea compresor", "Otro - Sistema Cuenta Litros"], "Sistema Eléctrico": ["Baterías - Descarga / No retienen", "ABS / Sensor de velocidad", "Iluminación exterior - Focos / Galibo", "Velocímetro / Tablero / Comunicación", "Pedal acelerador / Pérdida de potencia", "Cuartos / Luces de tonel", "Otro - Sistema Eléctrico"], "Suspensión": ["Bolsas de aire", "Amortiguadores", "Muelles / Resortes / Balancín", "Pernos / Bujes de suspensión", "Válvula niveladora / Módulo solenoide", "Desviación / Geometría", "Otro - Suspensión"], "Telemetría y Video": ["Cámara de reversa", "DMAS / Grabación / Video", "Botón de emergencia / Membrana", "TCS3000 - Falla general", "Comunicación cabina / Torre", "Otro - Telemetría y Video"], "Tonel / Compartimentos": ["Poro / Fisura en tonel", "Soldadura / Reparación estructural", "Oxidación / Pintura tonel", "Ejes de tonel / Maza", "Calibración volumétrica", "Otro - Tonel / Compartimentos"], "Transmisión": ["Ruido / Vibración en transmisión", "Se neutraliza / No entra velocidad", "Cardan / Cruceta", "Palanca de cambios", "Otro - Transmisión"]};
 
@@ -654,12 +691,12 @@ var TABS_POR_ROL = {
   "SUPERVISOR": ["sup","cierre"],
   "SUBGERENTE": ["sub"],
   "SUBGERENTE MANTENIMIENTO": ["sub"],
-  "COORDINADOR": ["coord"],
-  "SUBJEFE DE UNIDAD": ["coord"],
-  "GERENTE": ["ger"],
-  "GERENTE MANTENIMIENTO": ["ger"]
+  "COORDINADOR": ["coord","alertas"],
+  "SUBJEFE DE UNIDAD": ["coord","alertas"],
+  "GERENTE": ["ger","alertas"],
+  "GERENTE MANTENIMIENTO": ["ger","alertas"]
 };
-var TODOS_LOS_TABS = ["sup","sub","coord","ger","cierre","historial"];
+var TODOS_LOS_TABS = ["sup","sub","coord","ger","cierre","alertas","historial"];
 
 var usuarioActual = null; // {nombre, rol}
 
@@ -687,15 +724,56 @@ function confirmarIdentidad(){
   var u = USUARIOS_SISTEMA.find(function(x){ return x.nombre===nombre; });
   if(!u) return;
   usuarioActual = u;
-  try{ sessionStorage.setItem("usuarioActual", JSON.stringify(u)); }catch(e){}
-  aplicarFiltroDeRol(u);
+  try{ localStorage.setItem("usuarioActual", JSON.stringify(u)); }catch(e){}
   document.getElementById("id-overlay").classList.add("off");
   var bar = document.getElementById("cur-user-bar");
   bar.style.display = "flex";
   document.getElementById("cur-user-txt").textContent = u.nombre + " (" + u.rol + ")";
+  mostrarPantallaPendientes(u);
+}
+// v9: pantalla de pendientes al entrar (no bloqueante). Se muestra
+// tras identificarse, con los sub-folios abiertos del usuario (si es
+// Supervisor, los suyos; si es otro rol, se omite por ahora ya que
+// "pendiente" solo aplica de forma clara al Supervisor responsable).
+function mostrarPantallaPendientes(u){
+  if(u.rol !== "SUPERVISOR"){
+    aplicarFiltroDeRol(u);
+    return;
+  }
+  apiFetch({action:"obtener", filtros:{estado:"ASIGNADO", supervisor:u.nombre}}, function(res){
+    // Filtro reforzado del lado del navegador (además del que ya aplica
+    // el backend): nunca mostrar pendientes de OTRO supervisor, ni
+    // siquiera si el backend por algún motivo devolviera de más.
+    var asig = toArray(res.datos).filter(function(r){ return r.estado==="ASIGNADO" && r.supervisor===u.nombre; });
+    var pendientes = [];
+    asig.forEach(function(r){
+      var fl = Array.isArray(r.fallas) ? r.fallas : [];
+      fl.forEach(function(f, idx){
+        if(f && f.cierreEstado === "atendida") return;
+        pendientes.push({ subfolio:(f&&f.subfolio)||(r.folio+"-F"+(idx+1)), unidad:r.unidad,
+          grupo:(f&&f.grupo)||"", subgrupo:(f&&f.subgrupo)||"" });
+      });
+    });
+    if(!pendientes.length){ aplicarFiltroDeRol(u); return; }
+    document.getElementById("pend-titulo").textContent = "Tienes " + pendientes.length + " pendiente" + (pendientes.length>1?"s":"");
+    var lista = document.getElementById("pend-lista"); lista.innerHTML = "";
+    pendientes.forEach(function(p){
+      var item = document.createElement("div");
+      item.style.cssText = "background:#fff3cd;border:1px solid #ffe69c;border-radius:5px;padding:10px 12px;margin-bottom:8px;font-size:12px;";
+      var t = document.createElement("div"); t.style.cssText = "font-weight:700;color:#856404;"; t.textContent = p.subfolio + " — " + p.unidad;
+      var d = document.createElement("div"); d.style.cssText = "color:#6c757d;margin-top:2px;"; d.textContent = p.grupo + (p.subgrupo?" ▸ "+p.subgrupo:"");
+      item.appendChild(t); item.appendChild(d); lista.appendChild(item);
+    });
+    document.getElementById("pend-overlay").style.display = "flex";
+    window._pendUsuarioActual = u;
+  }, function(){ aplicarFiltroDeRol(u); });
+}
+function cerrarPantallaPendientes(){
+  document.getElementById("pend-overlay").style.display = "none";
+  if(window._pendUsuarioActual) aplicarFiltroDeRol(window._pendUsuarioActual);
 }
 function cambiarUsuario(){
-  try{ sessionStorage.removeItem("usuarioActual"); }catch(e){}
+  try{ localStorage.removeItem("usuarioActual"); }catch(e){}
   usuarioActual = null;
   document.getElementById("id-overlay").classList.remove("off");
   document.getElementById("cur-user-bar").style.display = "none";
@@ -719,12 +797,38 @@ function aplicarFiltroDeRol(u){
   if(!activoId || permitidos.indexOf(activoId) === -1){
     goTab(permitidos[0] || "historial");
   }
+  autocompletarSelectsPorUsuario(u);
+}
+// v9.1: cada tab (Supervisor, Subgerente, Coordinador, Cierre día) tenía
+// su propio select "-- Selecciona tu nombre --", independiente de la
+// pantalla de identificación. Esto hacía que, aunque ya te identificaras
+// arriba, cada tab te pidiera el nombre otra vez. Ahora se autocompleta
+// con el nombre de quien ya se identificó, y se bloquea (no se puede
+// cambiar desde aquí — solo con el botón "Cambiar" del encabezado, para
+// no abrir una puerta trasera al sistema de identificación).
+function autocompletarSelectsPorUsuario(u){
+  var mapa = {
+    "sup-sel": "sup", "sub-sel": "sub", "coord-sel": "coord", "cierre-sup-sel": "cierre"
+  };
+  Object.keys(mapa).forEach(function(selId){
+    var sel = document.getElementById(selId);
+    if(!sel) return;
+    var tieneOpcion = Array.from(sel.options).some(function(o){ return o.value === u.nombre; });
+    if(!tieneOpcion) return; // el select no aplica a este rol (ej. Supervisor no tiene coord-sel relevante)
+    sel.value = u.nombre;
+    sel.disabled = true;
+    sel.title = "Identificado como " + u.nombre + " — usa \"Cambiar\" en la parte superior para cambiar de usuario.";
+    // Disparar el evento change para que se ejecute la lógica asociada
+    // (ej. onSupSel(), cargarCierre()), igual que si el usuario lo
+    // hubiera seleccionado manualmente.
+    sel.dispatchEvent(new Event("change"));
+  });
 }
 // Restaurar identidad si ya se identificó antes en esta sesión de
 // navegador (no persiste entre dispositivos ni se comparte).
 (function intentarRestaurarIdentidad(){
   try{
-    var guardado = sessionStorage.getItem("usuarioActual");
+    var guardado = localStorage.getItem("usuarioActual");
     if(guardado){
       var u = JSON.parse(guardado);
       if(u && u.nombre && u.rol){
@@ -775,6 +879,7 @@ function goTab(t){
   if(t==="coord") cargarCoord();
   if(t==="ger") cargarGer();
   if(t==="cierre") cargarCierre();
+  if(t==="alertas") cargarAlertas();
   if(t==="historial") cargarHistorial();
 }
 
@@ -916,6 +1021,39 @@ function demoHandler(payload){
     return {success:true, mensaje:"Demo: cierre registrado"};
   }
 
+  if(action === "obtener-alertas"){
+    var alertasDemo = [];
+    DEMO_DB.forEach(function(r){
+      if(r.estado !== "ASIGNADO") return;
+      var fl = Array.isArray(r.fallas) ? r.fallas : [];
+      fl.forEach(function(f, idx){
+        if(f && f.cierreEstado === "atendida") return;
+        alertasDemo.push({
+          folio: r.folio, subfolio: (f&&f.subfolio)||(r.folio+"-F"+(idx+1)),
+          unidad: r.unidad, terminal: r.terminal, supervisor: r.supervisor,
+          grupo: (f&&f.grupo)||"", subgrupo: (f&&f.subgrupo)||"",
+          dias: 0, color: "verde"
+        });
+      });
+    });
+    return {success:true, datos:alertasDemo, todos:alertasDemo};
+  }
+
+  if(action === "unidad-pendientes"){
+    var pendDemo = [];
+    DEMO_DB.forEach(function(r){
+      if(r.unidad !== payload.unidad) return;
+      if(r.estado === "CERRADO" || r.estado === "RECHAZADO") return;
+      var fl = Array.isArray(r.fallas) ? r.fallas : [];
+      fl.forEach(function(f, idx){
+        if(f && f.cierreEstado === "atendida") return;
+        pendDemo.push({ folio:r.folio, subfolio:(f&&f.subfolio)||(r.folio+"-F"+(idx+1)),
+          estado:r.estado, grupo:(f&&f.grupo)||"", subgrupo:(f&&f.subgrupo)||"", fecha:r.fecha });
+      });
+    });
+    return {success:true, datos:pendDemo, todos:pendDemo};
+  }
+
   return {success:false, mensaje:"Accion no reconocida"};
 }
 
@@ -937,6 +1075,31 @@ function setPfx(p){ pfx = p;
 function setMtto(v){ mtto = v;
   document.getElementById("mc-prev").className = "mc" + (v==="Preventivo" ? " prev" : "");
   document.getElementById("mc-corr").className = "mc" + (v==="Correctivo" ? " corr" : "");
+}
+// v9: al salir del campo de número de unidad, busca si esa unidad ya
+// tiene sub-folios abiertos (de cualquier folio) y avisa al supervisor,
+// para que decida si es una falla nueva o ya reportada (evita duplicidad).
+function chequearDuplicidad(){
+  var num = document.getElementById("unit-num").value.trim();
+  var warn = document.getElementById("dup-warning");
+  if(!num){ warn.style.display="none"; return; }
+  var unidad = pfx + num;
+  apiFetch({action:"unidad-pendientes", unidad:unidad}, function(res){
+    var pendientes = toArray(res.datos);
+    if(!pendientes.length){ warn.style.display="none"; return; }
+    warn.innerHTML = "";
+    var titulo = document.createElement("div");
+    titulo.style.cssText = "font-weight:700;margin-bottom:6px;";
+    titulo.textContent = "⚠️ " + unidad + " ya tiene " + pendientes.length + " falla(s) abierta(s):";
+    warn.appendChild(titulo);
+    pendientes.forEach(function(p){
+      var item = document.createElement("div");
+      item.style.cssText = "margin-top:3px;";
+      item.textContent = "• " + p.subfolio + " — " + p.grupo + (p.subgrupo?" ▸ "+p.subgrupo:"") + " (" + p.estado + ")";
+      warn.appendChild(item);
+    });
+    warn.style.display = "block";
+  }, function(){ warn.style.display="none"; });
 }
 var subgrp = "";
 
@@ -1094,9 +1257,10 @@ function buildSubCard(r){
   // Fallas list
   var fi = document.createElement("div"); fi.className = "fi"; fi.style.marginTop = "10px";
   var fallasList = (Array.isArray(r.fallas) && r.fallas.length) ? r.fallas : [{grupo:r.tipoFalla||"Falla",subfallas:[r.notas||""],obs:""}];
-  fallasList.forEach(function(f){
+  fallasList.forEach(function(f, idx){
     var it = document.createElement("div"); it.className = "fi-item";
-    var g = document.createElement("div"); g.className = "fi-g"; g.textContent = f.grupo + (f.subgrupo ? " \u25b8 " + f.subgrupo : "");
+    var subfolioTxt = f.subfolio || (r.folio+"-F"+(idx+1));
+    var g = document.createElement("div"); g.className = "fi-g"; g.textContent = subfolioTxt+" — "+f.grupo + (f.subgrupo ? " \u25b8 " + f.subgrupo : "");
     var d = document.createElement("div"); d.className = "fi-d"; d.textContent = (f.subfallas||[]).join(" / ") + (f.obs?" - "+f.obs:"");
     it.appendChild(g); it.appendChild(d); fi.appendChild(it);
   });
@@ -1271,7 +1435,8 @@ function buildCoordCard(r){
   fallasList.forEach(function(f, i){
     var fb = document.createElement("div"); fb.className = "falla-box";
     var fh = document.createElement("div"); fh.className = "falla-box-hdr";
-    var fn = document.createElement("span"); fn.className = "falla-box-num"; fn.textContent = "F"+(i<9?"0":"")+(i+1);
+    var subfolioTxt = f.subfolio || (r.folio+"-F"+(i+1));
+    var fn = document.createElement("span"); fn.className = "falla-box-num"; fn.textContent = subfolioTxt;
     var ft = document.createElement("span"); ft.className = "falla-box-name"; ft.textContent = f.grupo;
     fh.appendChild(fn); fh.appendChild(ft); fb.appendChild(fh);
     var fd = document.createElement("div"); fd.className = "falla-box-desc"; fd.textContent = (f.subfallas||[]).join(" / ");
@@ -1453,7 +1618,10 @@ function cargarCierre(){
   var sup = document.getElementById("cierre-sup-sel").value;
   if(!sup) return;
   apiFetch({action:"obtener", filtros:{estado:"ASIGNADO", supervisor:sup}}, function(res){
-    var asig = toArray(res.datos).filter(function(r){ return r.estado==="ASIGNADO"; });
+    // Filtro reforzado del lado del navegador: crítico que un supervisor
+    // NUNCA vea (ni pueda cerrar) folios de otro supervisor, además del
+    // filtro que ya aplica el backend.
+    var asig = toArray(res.datos).filter(function(r){ return r.estado==="ASIGNADO" && r.supervisor===sup; });
     // Contar fallas individuales pendientes (no folios) para que el
     // total refleje la granularidad real de cierre por falla.
     var totalFallasPend = 0;
@@ -1530,7 +1698,8 @@ function buildFallaCierreBlock(r, idx, f){
 
   var fi = document.createElement("div"); fi.className="fi";
   var it=document.createElement("div"); it.className="fi-item";
-  var g=document.createElement("div"); g.className="fi-g"; g.textContent="Falla "+(idx+1)+" — "+(f.grupo||"")+(f.subgrupo?" ▸ "+f.subgrupo:"");
+  var subfolioTxt = f.subfolio || (r.folio+"-F"+(idx+1));
+  var g=document.createElement("div"); g.className="fi-g"; g.textContent=subfolioTxt+" — "+(f.grupo||"")+(f.subgrupo?" ▸ "+f.subgrupo:"");
   var d=document.createElement("div"); d.className="fi-d"; d.textContent=(f.subfallas||[]).join(" / ")+(f.proveedor?" | "+f.proveedor:"");
   it.appendChild(g); it.appendChild(d); fi.appendChild(it);
   wrap.appendChild(fi);
@@ -1795,6 +1964,43 @@ function enviarCierre(){
 }
 
 // --- HISTORIAL ---
+// --- ALERTAS (semáforo de antigüedad, v9) ---
+function cargarAlertas(){
+  apiFetch({action:"obtener-alertas"}, function(res){
+    var alertas = toArray(res.datos);
+    document.getElementById("al-verde").textContent = alertas.filter(function(a){ return a.color==="verde"; }).length;
+    document.getElementById("al-amarillo").textContent = alertas.filter(function(a){ return a.color==="amarillo"; }).length;
+    document.getElementById("al-rojo").textContent = alertas.filter(function(a){ return a.color==="rojo"; }).length;
+    document.getElementById("b-alertas").textContent = alertas.filter(function(a){ return a.color==="rojo"; }).length;
+    renderAlertas(alertas);
+  });
+}
+function renderAlertas(alertas){
+  var tbody = document.getElementById("alertas-tbody"); tbody.innerHTML = "";
+  if(!alertas.length){
+    var tr = document.createElement("tr");
+    var td = document.createElement("td"); td.colSpan = 7; td.style.cssText = "text-align:center;padding:30px;color:#adb5bd;";
+    td.textContent = "Sin sub-folios pendientes por antigüedad";
+    tr.appendChild(td); tbody.appendChild(tr); return;
+  }
+  alertas.forEach(function(a){
+    var tr = document.createElement("tr");
+    var tdSem = document.createElement("td");
+    var dot = document.createElement("span"); dot.className = "semaforo-dot " + a.color;
+    tdSem.appendChild(dot);
+    var lbl = document.createElement("span"); lbl.textContent = a.color.charAt(0).toUpperCase()+a.color.slice(1);
+    tdSem.appendChild(lbl);
+    tr.appendChild(tdSem);
+    [a.subfolio, a.unidad, a.terminal, a.supervisor, (a.grupo+(a.subgrupo?" ▸ "+a.subgrupo:""))].forEach(function(v){
+      var td = document.createElement("td"); td.textContent = v; tr.appendChild(td);
+    });
+    var tdDias = document.createElement("td"); tdDias.style.fontWeight = "700";
+    tdDias.textContent = a.dias + (a.dias===1?" día":" días");
+    tr.appendChild(tdDias);
+    tbody.appendChild(tr);
+  });
+}
+
 function cargarHistorial(){
   apiFetch({action:"obtener", filtros:{historial:true}}, function(res){
     var todos = res.todos||res.datos||[];
